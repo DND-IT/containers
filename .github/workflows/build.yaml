@@ -1,0 +1,300 @@
+---
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Image to build (all images when empty)
+        required: false
+        default: ""
+  pull_request:
+    paths:
+      - images/**
+  push:
+    branches:
+      - main
+    paths:
+      - images/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# github.repository_owner is `DND-IT`; registry references must be lowercase.
+env:
+  NAMESPACE: dnd-it
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.matrix.outputs.build }}
+      merge: ${{ steps.matrix.outputs.merge }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Generate matrix
+        id: matrix
+        env:
+          INPUT_IMAGE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+
+          case "${GITHUB_EVENT_NAME}" in
+            workflow_dispatch)
+              if [[ -n "${INPUT_IMAGE}" ]]; then
+                images="${INPUT_IMAGE}"
+              else
+                images="$(ls images)"
+              fi
+              ;;
+            pull_request)
+              images="$(git diff --name-only "origin/${GITHUB_BASE_REF}"...HEAD -- images | cut -d/ -f2 | sort -u)"
+              ;;
+            *)
+              if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+                images="$(git diff --name-only HEAD^ HEAD -- images | cut -d/ -f2 | sort -u)"
+              else
+                images="$(ls images)"
+              fi
+              ;;
+          esac
+
+          build="[]"
+          merge="[]"
+          for image in ${images}; do
+            metadata="images/${image}/metadata.yaml"
+            [[ -f "${metadata}" ]] || continue
+            version="$(yq '.version' "${metadata}")"
+            test_cmd="$(yq '.test // ""' "${metadata}")"
+            merge="$(jq -c --arg image "${image}" --arg version "${version}" \
+              '. + [{image: $image, version: $version}]' <<<"${merge}")"
+            while read -r platform; do
+              case "${platform}" in
+                linux/amd64) runner="ubuntu-latest" ;;
+                linux/arm64) runner="ubuntu-24.04-arm" ;;
+                *) echo "unsupported platform: ${platform}" >&2; exit 1 ;;
+              esac
+              build="$(jq -c \
+                --arg image "${image}" --arg version "${version}" --arg platform "${platform}" \
+                --arg slug "${platform//\//-}" --arg runner "${runner}" --arg test "${test_cmd}" \
+                '. + [{image: $image, version: $version, platform: $platform, slug: $slug, runner: $runner, test: $test}]' \
+                <<<"${build}")"
+            done < <(yq '.platforms[]' "${metadata}")
+          done
+
+          echo "build=${build}" >>"${GITHUB_OUTPUT}"
+          echo "merge=${merge}" >>"${GITHUB_OUTPUT}"
+
+  build:
+    name: build (${{ matrix.image }}, ${{ matrix.platform }})
+    needs: prepare
+    if: ${{ needs.prepare.outputs.build != '[]' }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.build) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint Dockerfile
+        if: ${{ matrix.platform == 'linux/amd64' }}
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: images/${{ matrix.image }}/Dockerfile
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Login to GHCR
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: images/${{ matrix.image }}
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: local/${{ matrix.image }}:test
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.slug }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.slug }}
+
+      - name: Test
+        if: ${{ github.event_name == 'pull_request' && matrix.test != '' }}
+        env:
+          TEST_CMD: ${{ matrix.test }}
+        # --entrypoint sh so the command runs regardless of the image's own
+        # ENTRYPOINT; images that exec a server (code-server, node) would
+        # otherwise swallow the test as extra arguments to that server.
+        run: docker run --rm --entrypoint sh local/${{ matrix.image }}:test -c "${TEST_CMD}"
+
+      - name: Build and push by digest
+        id: build
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: images/${{ matrix.image }}
+          platforms: ${{ matrix.platform }}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.version=${{ matrix.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=image,name=ghcr.io/${{ env.NAMESPACE }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.slug }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ matrix.slug }}
+
+      - name: Export digest
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.slug }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: merge (${{ matrix.image }})
+    needs:
+      - prepare
+      - build
+    if: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.merge != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.prepare.outputs.merge) }}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: digests-${{ matrix.image }}-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and push
+        id: push
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          ref="ghcr.io/${{ env.NAMESPACE }}/${{ matrix.image }}"
+          version="${{ matrix.version }}"
+          # Strip any -<revision> suffix before deriving the rolling tags, so a
+          # rebuild of the same upstream release (2.336.0-1) still moves 2.336/2.
+          base="${version%%-*}"
+          major="${base%%.*}"
+          minor="${base%.*}"
+          docker buildx imagetools create \
+            --tag "${ref}:${version}" \
+            --tag "${ref}:${minor}" \
+            --tag "${ref}:${major}" \
+            --tag "${ref}:latest" \
+            $(printf -- "${ref}@sha256:%s " *)
+          digest="$(docker buildx imagetools inspect "${ref}:${version}" --format '{{json .Manifest}}' | jq -r '.digest')"
+          echo "digest=${digest}" >>"${GITHUB_OUTPUT}"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-name: ghcr.io/${{ env.NAMESPACE }}/${{ matrix.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  sizes:
+    name: publish size data
+    needs:
+      - prepare
+      - merge
+    if: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.merge != '[]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo
+
+      - name: Collect size data
+        env:
+          MERGE_MATRIX: ${{ needs.prepare.outputs.merge }}
+        run: |
+          set -euo pipefail
+          while read -r entry; do
+            image="$(jq -r '.image' <<<"${entry}")"
+            version="$(jq -r '.version' <<<"${entry}")"
+            ./scripts/collect-sizes.sh "${image}" "${version}" gh-pages/data
+          done < <(jq -c '.[]' <<<"${MERGE_MATRIX}")
+          ls gh-pages/data/*.json | grep -v index.json | xargs -n1 basename \
+            | sed 's/\.json$//' | jq -R . | jq -s . >gh-pages/data/index.json
+
+      - name: Publish site
+        run: |
+          set -euo pipefail
+          cp site/index.html gh-pages/index.html
+          touch gh-pages/.nojekyll
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "chore: update size data for ${GITHUB_SHA}"
+            git push origin gh-pages
+          fi
