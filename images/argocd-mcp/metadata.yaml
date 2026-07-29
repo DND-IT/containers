@@ -1,0 +1,16 @@
+---
+name: argocd-mcp
+description: Argo CD MCP server (applications, sync, and resources over MCP)
+# <upstream mcp version>-<revision>. Bump the revision whenever this image's
+# contents change without ARGOCD_MCP_VERSION moving. Renovate tracks upstream
+# on ARGOCD_MCP_VERSION in the Dockerfile — deliberately not annotated here,
+# since a -N suffix is a semver pre-release and would be "upgraded" straight
+# back to the bare release.
+version: 0.8.0-1
+platforms:
+  - linux/amd64
+  - linux/arm64
+# The exact version is asserted in the Dockerfile; this checks the bin runs, the
+# image is rootless, and the HTTP transport actually serves /healthz. The server
+# starts without credentials — a token is only required per connection/call.
+test: argocd-mcp --version && test "$(id -u)" = 1001 && { argocd-mcp http >/tmp/http.log 2>&1 & } && { i=0; while [ "$i" -lt 30 ]; do wget -qO- http://127.0.0.1:3000/healthz && exit 0; i=$((i+1)); sleep 1; done; cat /tmp/http.log; exit 1; }

@@ -8,7 +8,7 @@ Container images for cloud work, built multi-arch and rootless with security-fir
 
 | Image | Description |
 |---|---|
-| _none yet_ | Add one with the `add-image` skill |
+| `ghcr.io/dnd-it/argocd-mcp` | [Argo CD MCP server](https://github.com/argoproj-labs/mcp-for-argocd) (applications, sync, and resources over MCP) |
 
 ## Usage
 
@@ -33,10 +33,40 @@ when this repo rebuilds the same upstream version; the rolling `X.Y`, `X`, and
 - SBOM and SLSA provenance attestations attached to every image
 - Every published image re-scanned daily for HIGH/CRITICAL CVEs, reported to GitHub code scanning
 
+### argocd-mcp
+
+Packages the npm release of [argoproj-labs/mcp-for-argocd](https://github.com/argoproj-labs/mcp-for-argocd). Defaults to the HTTP Stream transport on `:3000` (`POST /mcp`, with `GET /healthz` for probes):
+
+```shell
+docker run --rm -p 3000:3000 \
+  -e ARGOCD_BASE_URL=https://argocd.example.com \
+  -e ARGOCD_API_TOKEN=<token> \
+  ghcr.io/dnd-it/argocd-mcp:latest
+```
+
+| Variable | Effect |
+|---|---|
+| `ARGOCD_BASE_URL` | Argo CD API endpoint; may also be sent per-connection as the `x-argocd-base-url` header |
+| `ARGOCD_API_TOKEN` | Argo CD API token; may also be sent as the `x-argocd-api-token` header. Never read from tool arguments |
+| `ARGOCD_TOKEN_REGISTRY_PATH` | JSON file of `{baseUrl, token}` pairs for targeting multiple Argo CD instances. Fails closed if set but unreadable |
+| `MCP_READ_ONLY` | `true` disables `create_application`, `update_application`, `delete_application`, and `sync_application` |
+
+The server starts without credentials — a token is required per connection or per call, not at startup. Override the command for the other transports or to tune the listener:
+
+```shell
+# stdio, for clients that speak MCP over stdin/stdout
+docker run --rm -i ghcr.io/dnd-it/argocd-mcp:latest argocd-mcp stdio
+
+# more than one replica without sticky sessions needs stateless mode
+docker run --rm -p 3000:3000 ghcr.io/dnd-it/argocd-mcp:latest argocd-mcp http --stateless
+```
+
+A `sse` transport also exists upstream but the HTTP Stream transport supersedes it.
+
 ### Verifying provenance
 
 ```shell
-gh attestation verify oci://ghcr.io/dnd-it/<name>:1.0.0 --owner DND-IT
+gh attestation verify oci://ghcr.io/dnd-it/argocd-mcp:0.8.0-1 --owner DND-IT
 ```
 
 ## Versioning and releases
