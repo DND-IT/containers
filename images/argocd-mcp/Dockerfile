@@ -5,7 +5,7 @@ ARG ARGOCD_MCP_VERSION=0.8.0
 # The node base image ships an older bundled npm whose own vendored deps carry
 # known CVEs; upgrading npm itself is the only way to move them.
 # renovate: datasource=npm depName=npm
-ARG NPM_VERSION=12.0.1
+ARG NPM_VERSION=12.0.2
 
 # The published bundle is architecture-independent JavaScript, so no TARGETARCH
 # mapping is needed — the only per-arch content comes from the base image.
