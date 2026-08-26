@@ -7,6 +7,6 @@ RUN groupadd --gid 1001 go \
 LABEL org.opencontainers.image.description="Hardened Debian Go toolchain base image for building Go services"
 
 # Build-stage base only: Go compiles to a static binary, so downstream
-# Dockerfiles should still multi-stage the compiled binary into their own
-# minimal runtime layer rather than shipping this full toolchain to production.
+# Dockerfiles should still multi-stage the compiled binary into
+# ghcr.io/dnd-it/go-runtime rather than shipping this full toolchain to production.
 USER go
