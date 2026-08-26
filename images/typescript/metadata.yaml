@@ -1,8 +1,0 @@
----
-name: typescript
-description: Hardened Debian-slim Node.js and TypeScript base image for building and running TypeScript services
-version: 0.1.0
-platforms:
-  - linux/amd64
-  - linux/arm64
-test: node --version && npm --version && tsc --version && test "$(id -u)" -ne 0
