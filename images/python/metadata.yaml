@@ -1,0 +1,8 @@
+---
+name: python
+description: Hardened Debian-slim Python base image for building and running Python services
+version: 0.1.0
+platforms:
+  - linux/amd64
+  - linux/arm64
+test: python3 --version && pip3 --version && test "$(id -u)" -ne 0
