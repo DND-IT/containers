@@ -3,48 +3,12 @@
   "history": [
     {
       "version": "0.8.0-1",
-      "digest": "sha256:2339dde2006dcdfbeef1fe3ec6df75a956418a3c58d0dce5865ceb448d86b389",
-      "collectedAt": "2026-07-30T04:53:53Z",
+      "digest": "sha256:1e9063747e0d558cef4b399957c77f236388eee962fea47c5471a98c02f4bc33",
+      "collectedAt": "2026-08-27T14:36:02Z",
       "platforms": {
-        "linux/amd64": {
-          "digest": "sha256:3617e227385444ffcde65edcb13a4ea220901a385a093637a2cdce46bed2cc49",
-          "size": 64790978,
-          "layers": [
-            {
-              "digest": "sha256:55afa1ecc21d2bb5e5045f32dafee56272ffd89860bac26f6c32123439af26a4",
-              "size": 3846391,
-              "command": "ADD alpine-minirootfs-3.24.1-x86_64.tar.gz / # buildkit"
-            },
-            {
-              "digest": "sha256:7e2a5e2761f53b694faaee16c5ad1e400cb41224f693337aac52e74bee3b2f65",
-              "size": 52524717,
-              "command": "RUN /bin/sh -c addgroup -g 1000 node     && adduser -u 1000 -G node -s /bin/sh -D node     && apk add --no-cache         libstdc++     && apk add --no-cache --virtual .build-deps         curl     && ARCH= OPENSSL_ARCH='linux*' && alpineArch=\"$(apk --print-arch)\"       && case \"${alpineArch##*-}\" in         x86_64) ARCH='x64' CHECKSUM=\"b818a0c3857272329cad4d575abf49e5060215858c9c3015437366f8adc7b85d\" OPENSSL_ARCH=linux-x86_64;;         x86) OPENSSL_ARCH=linux-elf;;         aarch64) OPENSSL_ARCH=linux-aarch64;;         arm*) OPENSSL_ARCH=linux-armv4;;         ppc64le) OPENSSL_ARCH=linux-ppc64le;;         s390x) OPENSSL_ARCH=linux-s390x;;         *) ;;       esac   && if [ -n \"${CHECKSUM}\" ]; then     set -eu;     curl -fsSLO --compressed \"https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\";     echo \"$CHECKSUM  node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\" | sha256sum -c -       && tar -xJf \"node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\" -C /usr/local --strip-components=1 --no-same-owner       && ln -s /usr/local/bin/node /usr/local/bin/nodejs;   else     echo \"Building from source\"     && apk add --no-cache --virtual .build-deps-full         binutils-gold         g++         gcc         gnupg         libgcc         linux-headers         make         python3         py-setuptools     && export GNUPGHOME=\"$(mktemp -d)\"     && for key in       5BE8A3F6C8A5C01D106C0AD820B1A390B168D356       DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7       CC68F5A3106FF448322E48ED27F5E38D5B0A215F       8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600       890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4       C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C       108F52B48DB57BB0CC439B2997B01419BD92F80A       A363A499291CBBC940DD62E41F10027AF002F8B0     ; do       { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||       { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;     done     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION.tar.xz\"     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc\"     && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc     && gpgconf --kill all     && rm -rf \"$GNUPGHOME\"     && grep \" node-v$NODE_VERSION.tar.xz\\$\" SHASUMS256.txt | sha256sum -c -     && tar -xf \"node-v$NODE_VERSION.tar.xz\"     && cd \"node-v$NODE_VERSION\"     && ./configure     && make -j$(getconf _NPROCESSORS_ONLN) V=     && make install     && apk del .build-deps-full     && cd ..     && rm -Rf \"node-v$NODE_VERSION\"     && rm \"node-v$NODE_VERSION.tar.xz\" SHASUMS256.txt.asc SHASUMS256.txt;   fi   && rm -f \"node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\"   && find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name \"$OPENSSL_ARCH\" -exec rm -rf {} \\;   && apk del .build-deps   && node --version   && npm --version   && rm -rf /tmp/* # buildkit"
-            },
-            {
-              "digest": "sha256:57eb903fc7a4b0006b1253f877823b15c51433ccd41a20392812682211c46a6c",
-              "size": 1262109,
-              "command": "RUN /bin/sh -c apk add --no-cache --virtual .build-deps-yarn curl gnupg tar   && export GNUPGHOME=\"$(mktemp -d)\"   && for key in     6A010C5166006599AA17F08146C2130DFD2497F5   ; do     { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||     { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;   done   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz\"   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc\"   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && gpgconf --kill all   && rm -rf \"$GNUPGHOME\"   && mkdir -p /opt   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && apk del .build-deps-yarn   && yarn --version   && rm -rf /tmp/* # buildkit"
-            },
-            {
-              "digest": "sha256:21af007bacf625b557dda6dbce062088808612be54a955980b3d8efb8ea7d082",
-              "size": 448,
-              "command": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit"
-            },
-            {
-              "digest": "sha256:d66c3639fad7d84de512f52fa94c219dd5190c643cd73cae779de3645981c4c9",
-              "size": 7156344,
-              "command": "RUN |2 ARGOCD_MCP_VERSION=0.8.0 NPM_VERSION=12.0.1 /bin/sh -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"argocd-mcp@${ARGOCD_MCP_VERSION}\"     && npm cache clean --force     && test \"$(argocd-mcp --version)\" = \"${ARGOCD_MCP_VERSION}\" # buildkit"
-            },
-            {
-              "digest": "sha256:1fdfaab10abe56effadcc0f2999ad72ddf6afa0ade1224326c6152db2f46feca",
-              "size": 969,
-              "command": "RUN |2 ARGOCD_MCP_VERSION=0.8.0 NPM_VERSION=12.0.1 /bin/sh -c addgroup -g 1001 argocd     && adduser -D -u 1001 -G argocd argocd # buildkit"
-            }
-          ]
-        },
         "linux/arm64": {
-          "digest": "sha256:9aa367eee82f2bf8d71ce96ae8d355d6cb8f65cfa7cdecd0ef6e81c067ef6492",
-          "size": 65667734,
+          "digest": "sha256:214eed4377d490b4fe30782fbb612f987086084c6bfdd43fefe0dc4c7780141b",
+          "size": 65719010,
           "layers": [
             {
               "digest": "sha256:5de55e5ef9c033997441461efe7ba23a986db059c0bb78b38f84ee0d72b99167",
@@ -67,14 +31,50 @@
               "command": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit"
             },
             {
-              "digest": "sha256:fd632df95be0074003b9fe71ca7c1694f0e20008c3b3432e9efc10bdf60469f4",
-              "size": 7155653,
-              "command": "RUN |2 ARGOCD_MCP_VERSION=0.8.0 NPM_VERSION=12.0.1 /bin/sh -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"argocd-mcp@${ARGOCD_MCP_VERSION}\"     && npm cache clean --force     && test \"$(argocd-mcp --version)\" = \"${ARGOCD_MCP_VERSION}\" # buildkit"
+              "digest": "sha256:3f0e605465c8f942e80a29425b129cbe49470df7b94a532da3f7ea126c4eb1d9",
+              "size": 7206926,
+              "command": "RUN |2 ARGOCD_MCP_VERSION=0.9.0 NPM_VERSION=12.0.1 /bin/sh -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"argocd-mcp@${ARGOCD_MCP_VERSION}\"     && npm cache clean --force     && test \"$(argocd-mcp --version)\" = \"${ARGOCD_MCP_VERSION}\" # buildkit"
             },
             {
-              "digest": "sha256:01f9f46a1259dfd58ccccdc2be04a8ce96d6cb60d83130bdd36131b4756f733f",
-              "size": 966,
-              "command": "RUN |2 ARGOCD_MCP_VERSION=0.8.0 NPM_VERSION=12.0.1 /bin/sh -c addgroup -g 1001 argocd     && adduser -D -u 1001 -G argocd argocd # buildkit"
+              "digest": "sha256:0834d919b03b351fea94e4aabc5596d51d571d038d21efc41ab835378b962c8d",
+              "size": 969,
+              "command": "RUN |2 ARGOCD_MCP_VERSION=0.9.0 NPM_VERSION=12.0.1 /bin/sh -c addgroup -g 1001 argocd     && adduser -D -u 1001 -G argocd argocd # buildkit"
+            }
+          ]
+        },
+        "linux/amd64": {
+          "digest": "sha256:ab9724e190ae1a8f8f38e12bd5100e9f6ba34f4f3890a5e178d53622deb900d5",
+          "size": 64840608,
+          "layers": [
+            {
+              "digest": "sha256:55afa1ecc21d2bb5e5045f32dafee56272ffd89860bac26f6c32123439af26a4",
+              "size": 3846391,
+              "command": "ADD alpine-minirootfs-3.24.1-x86_64.tar.gz / # buildkit"
+            },
+            {
+              "digest": "sha256:7e2a5e2761f53b694faaee16c5ad1e400cb41224f693337aac52e74bee3b2f65",
+              "size": 52524717,
+              "command": "RUN /bin/sh -c addgroup -g 1000 node     && adduser -u 1000 -G node -s /bin/sh -D node     && apk add --no-cache         libstdc++     && apk add --no-cache --virtual .build-deps         curl     && ARCH= OPENSSL_ARCH='linux*' && alpineArch=\"$(apk --print-arch)\"       && case \"${alpineArch##*-}\" in         x86_64) ARCH='x64' CHECKSUM=\"b818a0c3857272329cad4d575abf49e5060215858c9c3015437366f8adc7b85d\" OPENSSL_ARCH=linux-x86_64;;         x86) OPENSSL_ARCH=linux-elf;;         aarch64) OPENSSL_ARCH=linux-aarch64;;         arm*) OPENSSL_ARCH=linux-armv4;;         ppc64le) OPENSSL_ARCH=linux-ppc64le;;         s390x) OPENSSL_ARCH=linux-s390x;;         *) ;;       esac   && if [ -n \"${CHECKSUM}\" ]; then     set -eu;     curl -fsSLO --compressed \"https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\";     echo \"$CHECKSUM  node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\" | sha256sum -c -       && tar -xJf \"node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\" -C /usr/local --strip-components=1 --no-same-owner       && ln -s /usr/local/bin/node /usr/local/bin/nodejs;   else     echo \"Building from source\"     && apk add --no-cache --virtual .build-deps-full         binutils-gold         g++         gcc         gnupg         libgcc         linux-headers         make         python3         py-setuptools     && export GNUPGHOME=\"$(mktemp -d)\"     && for key in       5BE8A3F6C8A5C01D106C0AD820B1A390B168D356       DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7       CC68F5A3106FF448322E48ED27F5E38D5B0A215F       8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600       890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4       C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C       108F52B48DB57BB0CC439B2997B01419BD92F80A       A363A499291CBBC940DD62E41F10027AF002F8B0     ; do       { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||       { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;     done     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION.tar.xz\"     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc\"     && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc     && gpgconf --kill all     && rm -rf \"$GNUPGHOME\"     && grep \" node-v$NODE_VERSION.tar.xz\\$\" SHASUMS256.txt | sha256sum -c -     && tar -xf \"node-v$NODE_VERSION.tar.xz\"     && cd \"node-v$NODE_VERSION\"     && ./configure     && make -j$(getconf _NPROCESSORS_ONLN) V=     && make install     && apk del .build-deps-full     && cd ..     && rm -Rf \"node-v$NODE_VERSION\"     && rm \"node-v$NODE_VERSION.tar.xz\" SHASUMS256.txt.asc SHASUMS256.txt;   fi   && rm -f \"node-v$NODE_VERSION-linux-$ARCH-musl.tar.xz\"   && find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name \"$OPENSSL_ARCH\" -exec rm -rf {} \\;   && apk del .build-deps   && node --version   && npm --version   && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:57eb903fc7a4b0006b1253f877823b15c51433ccd41a20392812682211c46a6c",
+              "size": 1262109,
+              "command": "RUN /bin/sh -c apk add --no-cache --virtual .build-deps-yarn curl gnupg tar   && export GNUPGHOME=\"$(mktemp -d)\"   && for key in     6A010C5166006599AA17F08146C2130DFD2497F5   ; do     { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||     { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;   done   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz\"   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc\"   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && gpgconf --kill all   && rm -rf \"$GNUPGHOME\"   && mkdir -p /opt   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && apk del .build-deps-yarn   && yarn --version   && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:21af007bacf625b557dda6dbce062088808612be54a955980b3d8efb8ea7d082",
+              "size": 448,
+              "command": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit"
+            },
+            {
+              "digest": "sha256:030c7ad0b0ee6e65670fb26edeef10edf25a9ec239b208bfeeb4de17d6568338",
+              "size": 7205975,
+              "command": "RUN |2 ARGOCD_MCP_VERSION=0.9.0 NPM_VERSION=12.0.1 /bin/sh -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"argocd-mcp@${ARGOCD_MCP_VERSION}\"     && npm cache clean --force     && test \"$(argocd-mcp --version)\" = \"${ARGOCD_MCP_VERSION}\" # buildkit"
+            },
+            {
+              "digest": "sha256:b74748ab480d29ef56ea2aa563d2e4e963f45b8f2b6d8b7286d7a791c0fe20b4",
+              "size": 968,
+              "command": "RUN |2 ARGOCD_MCP_VERSION=0.9.0 NPM_VERSION=12.0.1 /bin/sh -c addgroup -g 1001 argocd     && adduser -D -u 1001 -G argocd argocd # buildkit"
             }
           ]
         }
