@@ -9,6 +9,10 @@ Container images for cloud work, built multi-arch and rootless with security-fir
 | Image | Description |
 |---|---|
 | `ghcr.io/dnd-it/argocd-mcp` | [Argo CD MCP server](https://github.com/argoproj-labs/mcp-for-argocd) (applications, sync, and resources over MCP) |
+| `ghcr.io/dnd-it/python` | Hardened Debian-slim Python base image for building and running Python services |
+| `ghcr.io/dnd-it/go` | Hardened Debian Go toolchain base image for building Go services |
+| `ghcr.io/dnd-it/go-runtime` | Minimal Debian-slim runtime base for statically-compiled Go binaries, no toolchain |
+| `ghcr.io/dnd-it/node` | Hardened Debian-slim Node.js base image for building and running Node.js and TypeScript services |
 
 ## Usage
 
