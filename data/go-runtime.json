@@ -1,0 +1,55 @@
+{
+  "name": "go-runtime",
+  "history": [
+    {
+      "version": "0.1.0",
+      "digest": "sha256:5cbcb258cf8253667ba6099e083e8a543f1561c389ca1d1bbac39cbe5d15cb93",
+      "collectedAt": "2026-09-08T10:02:57Z",
+      "platforms": {
+        "linux/amd64": {
+          "digest": "sha256:aae152f1aabed6737b9aa9aa5026e5d2c650f88c2a088babd102c8b6251c9a89",
+          "size": 31759408,
+          "layers": [
+            {
+              "digest": "sha256:a8ac7f6c67abc236e4c745052c404112b8fab6fe8ac3a329d1ef3b867ad67c71",
+              "size": 28232655,
+              "command": "# debian.sh --arch 'amd64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:6673dd23abc8e4c87eaf88c8b9c86b3c5b428c811c8414540e9604b69b8850fd",
+              "size": 3523442,
+              "command": "RUN /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends ca-certificates     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:191a84d297a1b549521dfc07f7232e60ecd073497ea9eefbcd5e13bc459c1988",
+              "size": 3311,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go # buildkit"
+            }
+          ]
+        },
+        "linux/arm64": {
+          "digest": "sha256:3363a1afe6f646668d86ed016a4dca557771896eed0337d7047c449dd8e7c996",
+          "size": 31473929,
+          "layers": [
+            {
+              "digest": "sha256:75782e20ea1f4a9d9259bc20a5ecbbea8d5943bf5370bf0f5727900728f1cc9a",
+              "size": 28117289,
+              "command": "# debian.sh --arch 'arm64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:0908c7cc458ad2c7be9d213d67a598b7ff4ae301219ca9e93c894112aea96178",
+              "size": 3353329,
+              "command": "RUN /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends ca-certificates     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:cf02c3b29419790a042f2557e577f577aa9cead343212ecb2d173206fc554543",
+              "size": 3311,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go # buildkit"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "description": "Minimal Debian-slim runtime base for statically-compiled Go binaries, no toolchain"
+}

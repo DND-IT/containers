@@ -1,3 +1,7 @@
 [
-  "argocd-mcp"
+  "argocd-mcp",
+  "go",
+  "go-runtime",
+  "node",
+  "python"
 ]

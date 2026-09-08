@@ -1,0 +1,105 @@
+{
+  "name": "go",
+  "history": [
+    {
+      "version": "0.1.0",
+      "digest": "sha256:130495cac03114ff8a4b6f1cb45d2706ee504ccd8f9754395fd59ea8b9873595",
+      "collectedAt": "2026-09-08T10:02:56Z",
+      "platforms": {
+        "linux/arm64": {
+          "digest": "sha256:ca30504d22e0bd27e22323a04da8cc058dc10116612d0f3e2c4a504684ab71ef",
+          "size": 290772566,
+          "layers": [
+            {
+              "digest": "sha256:db86109db3a878cad2671ab822c9b43afbab6a5e1a67658d760dc0b15e7b75d5",
+              "size": 48383649,
+              "command": "# debian.sh --arch 'arm64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:7fea2228218a869ae6619766dc4aae2d5e251700ebac01541d63cafea4bc7fc7",
+              "size": 23628261,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tca-certificates \t\tcurl \t\tgnupg \t\tnetbase \t\tsq \t\twget \t; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:742d423df6ec83a05afd11c678f055935985f615115c46681d670810438c3732",
+              "size": 64500577,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tgit \t\tmercurial \t\topenssh-client \t\tsubversion \t\t\t\tprocps \t; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:5b78cae06a4806d882bc476403a00a4a4a5e2c0e1fd0c805c755174f7701d200",
+              "size": 86627066,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tg++ \t\tgcc \t\tlibc6-dev \t\tmake \t\tpkg-config \t; \tdpkgArch=\"$(dpkg --print-architecture)\"; \tif [ \"$dpkgArch\" = 'arm64' ]; then \t\tapt-get install -y --no-install-recommends binutils-gold; \tfi; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:7c7d71ede3d0f0c6bd07ffa6581b7c523b2a236cd9c9a0151e44c9cfe43011ab",
+              "size": 67629464,
+              "command": "COPY /target/ / # buildkit"
+            },
+            {
+              "digest": "sha256:2d36d780a4ad35e7554779c819e5652cff68d90848dbadc08945dd8bb330053c",
+              "size": 126,
+              "command": "RUN /bin/sh -c mkdir -p \"$GOPATH/src\" \"$GOPATH/bin\" && chmod -R 1777 \"$GOPATH\" # buildkit"
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "size": 32,
+              "command": "WORKDIR /go"
+            },
+            {
+              "digest": "sha256:cfad2610358fcd365dc257ccd25135273a724b365c20526908dcd798e1d39d9d",
+              "size": 3391,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go     && chown -R go:go /go # buildkit"
+            }
+          ]
+        },
+        "linux/amd64": {
+          "digest": "sha256:e8e670af51361a62e019541ead8aa107bec31be5df4dbaefd2883dc069cc0816",
+          "size": 300572111,
+          "layers": [
+            {
+              "digest": "sha256:abf56b2f87242de589f03ea56779358079c07c4c099bd1e454d083538eb6666d",
+              "size": 48497362,
+              "command": "# debian.sh --arch 'amd64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:08457856946d74c8aede7d750e185d1e479a79b8123d1b805182a580d224a6e2",
+              "size": 24056247,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tca-certificates \t\tcurl \t\tgnupg \t\tnetbase \t\tsq \t\twget \t; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:8cab6ce149c24516f80b26a762b6b9aaebcaf4fbe51d4c6844af7d7dbc372f2d",
+              "size": 64413065,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tgit \t\tmercurial \t\topenssh-client \t\tsubversion \t\t\t\tprocps \t; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:8c1ee0a41178d33d707ecac5e90dbecc99631c76982b30db6cc985a236ed7e73",
+              "size": 92545131,
+              "command": "RUN /bin/sh -c set -eux; \tapt-get update; \tapt-get install -y --no-install-recommends \t\tg++ \t\tgcc \t\tlibc6-dev \t\tmake \t\tpkg-config \t; \tdpkgArch=\"$(dpkg --print-architecture)\"; \tif [ \"$dpkgArch\" = 'arm64' ]; then \t\tapt-get install -y --no-install-recommends binutils-gold; \tfi; \trm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:daee4590c9478cfdac9f40a88759297738e75fbef28baa5b8ea3c56a8f9bb19f",
+              "size": 71056760,
+              "command": "COPY /target/ / # buildkit"
+            },
+            {
+              "digest": "sha256:96e6e6513c13cd8bf42113565b3b2011920b24c412b2cbcb95f441a26b1903e2",
+              "size": 125,
+              "command": "RUN /bin/sh -c mkdir -p \"$GOPATH/src\" \"$GOPATH/bin\" && chmod -R 1777 \"$GOPATH\" # buildkit"
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "size": 32,
+              "command": "WORKDIR /go"
+            },
+            {
+              "digest": "sha256:085e0b4ac2f26ed5ec5b48703632a9640724ffea9806023a04542f9feb52b463",
+              "size": 3389,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go     && chown -R go:go /go # buildkit"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "description": "Hardened Debian Go toolchain base image for building Go services"
+}
