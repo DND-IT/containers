@@ -55,7 +55,21 @@ docker run --rm -p 3000:3000 \
 | `ARGOCD_TOKEN_REGISTRY_PATH` | JSON file of `{baseUrl, token}` pairs for targeting multiple Argo CD instances. Fails closed if set but unreadable |
 | `MCP_READ_ONLY` | `true` disables `create_application`, `update_application`, `delete_application`, and `sync_application` |
 
-The server starts without credentials — a token is required per connection or per call, not at startup. Override the command for the other transports or to tune the listener:
+The server starts without credentials — a token is required per connection or per call, not at startup.
+
+Upstream exposes the listener settings as flags only. This image's entrypoint also reads them from the environment, so it runs on platforms that cannot override the container command:
+
+| Variable | Effect |
+|---|---|
+| `MCP_BIND_ADDRESS` | Address to listen on. Defaults to loopback; a wider bind needs `MCP_AUTH_TOKEN` or `MCP_ALLOW_UNAUTHENTICATED` |
+| `MCP_PORT` | Listener port, default `3000` |
+| `MCP_STATELESS` | `true` runs stateless, for more than one replica without sticky sessions |
+| `MCP_ALLOW_UNAUTHENTICATED` | `true` permits a non-loopback bind with no `MCP_AUTH_TOKEN`. Only safe when an external layer already authenticates callers |
+| `MCP_AUTH_TOKEN` | Bearer token required on inbound requests |
+
+Amazon Bedrock AgentCore Runtime expects streamable HTTP on `0.0.0.0:8000/mcp` and authenticates every invocation with IAM before it reaches the container, so it needs `MCP_BIND_ADDRESS=0.0.0.0`, `MCP_PORT=8000`, `MCP_STATELESS=true` and `MCP_ALLOW_UNAUTHENTICATED=true`.
+
+Any command passed to the container runs verbatim instead, so the other transports and explicit flags still work:
 
 ```shell
 # stdio, for clients that speak MCP over stdin/stdout
@@ -70,7 +84,7 @@ A `sse` transport also exists upstream but the HTTP Stream transport supersedes 
 ### Verifying provenance
 
 ```shell
-gh attestation verify oci://ghcr.io/dnd-it/argocd-mcp:0.8.0-1 --owner DND-IT
+gh attestation verify oci://ghcr.io/dnd-it/argocd-mcp:0.9.0-1 --owner DND-IT
 ```
 
 ## Versioning and releases

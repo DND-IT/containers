@@ -6,11 +6,26 @@ description: Argo CD MCP server (applications, sync, and resources over MCP)
 # on ARGOCD_MCP_VERSION in the Dockerfile — deliberately not annotated here,
 # since a -N suffix is a semver pre-release and would be "upgraded" straight
 # back to the bare release.
-version: 0.8.0-1
+version: 0.9.0-1
 platforms:
   - linux/amd64
   - linux/arm64
 # The exact version is asserted in the Dockerfile; this checks the bin runs, the
-# image is rootless, and the HTTP transport actually serves /healthz. The server
-# starts without credentials — a token is only required per connection/call.
-test: argocd-mcp --version && test "$(id -u)" = 1001 && { argocd-mcp http >/tmp/http.log 2>&1 & } && { i=0; while [ "$i" -lt 30 ]; do wget -qO- http://127.0.0.1:3000/healthz && exit 0; i=$((i+1)); sleep 1; done; cat /tmp/http.log; exit 1; }
+# image is rootless, and both entrypoint paths serve /healthz: the bare default
+# (loopback :3000) and the env-configured one AgentCore Runtime uses. The ArgoCD
+# credentials are placeholders — `initialize` never calls ArgoCD, but the server
+# refuses a connection that carries no token at all.
+test: >-
+  argocd-mcp --version && test "$(id -u)" = 1001 &&
+  probe() { i=0; while [ "$i" -lt 30 ]; do wget -qO- "http://127.0.0.1:$1/healthz" >/dev/null 2>&1 && return 0; i=$((i+1)); sleep 1; done; cat "$2"; return 1; } &&
+  { /usr/local/bin/entrypoint.sh >/tmp/default.log 2>&1 & } &&
+  probe 3000 /tmp/default.log &&
+  grep -q "listening on 127.0.0.1:3000" /tmp/default.log &&
+  { MCP_PORT=8000 MCP_BIND_ADDRESS=0.0.0.0 MCP_STATELESS=true MCP_ALLOW_UNAUTHENTICATED=true
+  ARGOCD_BASE_URL=https://argocd.invalid ARGOCD_API_TOKEN=placeholder
+  /usr/local/bin/entrypoint.sh >/tmp/env.log 2>&1 & } &&
+  probe 8000 /tmp/env.log &&
+  grep -q "(stateless mode) listening on 0.0.0.0:8000" /tmp/env.log &&
+  wget -qO- --header="Content-Type: application/json" --header="Accept: application/json, text/event-stream"
+  --post-data='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}'
+  http://127.0.0.1:8000/mcp | grep -q '"serverInfo"'
