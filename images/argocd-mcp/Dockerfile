@@ -14,6 +14,8 @@ RUN npm install -g "npm@${NPM_VERSION}" \
     && npm cache clean --force \
     && test "$(argocd-mcp --version)" = "${ARGOCD_MCP_VERSION}"
 
+COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
+
 RUN addgroup -g 1001 argocd \
     && adduser -D -u 1001 -G argocd argocd
 
@@ -23,7 +25,8 @@ EXPOSE 3000
 
 LABEL org.opencontainers.image.description="Argo CD MCP server (applications, sync, and resources over MCP)"
 
-# HTTP Stream transport, listening on :3000 with a GET /healthz probe. Override
-# the command with `stdio` for clients that speak MCP over stdin/stdout, and add
-# --stateless when running more than one replica without sticky sessions.
-CMD ["argocd-mcp", "http"]
+# No CMD: the entrypoint defaults to the HTTP Stream transport on :3000 with a
+# GET /healthz probe, taking MCP_PORT, MCP_STATELESS and MCP_ALLOW_UNAUTHENTICATED
+# from the environment. Any command passed to the container is exec'd verbatim,
+# so `argocd-mcp stdio` and explicit flags keep working.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

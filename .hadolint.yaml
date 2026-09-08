@@ -3,3 +3,7 @@ ignored:
   # apt package versions are not pinned; base image digests and release
   # tarballs are pinned instead, and Renovate keeps them fresh
   - DL3008
+  # every image creates its user with uid/gid 1001 and switches to it by name,
+  # which reads better than a bare number; each metadata.yaml `test` asserts at
+  # runtime that the process is non-root, so the uid is checked where it matters
+  - DL3066
