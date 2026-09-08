@@ -175,7 +175,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: digests-${{ matrix.image }}-${{ matrix.slug }}
+          name: digests-${{ matrix.image }}--${{ matrix.slug }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -201,7 +201,7 @@ jobs:
       - name: Download digests
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          pattern: digests-${{ matrix.image }}-*
+          pattern: digests-${{ matrix.image }}--*
           path: /tmp/digests
           merge-multiple: true
 
@@ -248,7 +248,7 @@ jobs:
     needs:
       - prepare
       - merge
-    if: ${{ github.event_name != 'pull_request' && needs.prepare.outputs.merge != '[]' }}
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && github.event_name != 'pull_request' && needs.prepare.outputs.merge != '[]' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -271,17 +271,39 @@ jobs:
           sudo apt-get install -y --no-install-recommends skopeo
 
       - name: Collect size data
+        id: collect
         env:
           MERGE_MATRIX: ${{ needs.prepare.outputs.merge }}
         run: |
           set -euo pipefail
-          while read -r entry; do
-            image="$(jq -r '.image' <<<"${entry}")"
-            version="$(jq -r '.version' <<<"${entry}")"
-            ./scripts/collect-sizes.sh "${image}" "${version}" gh-pages/data
-          done < <(jq -c '.[]' <<<"${MERGE_MATRIX}")
-          ls gh-pages/data/*.json | grep -v index.json | xargs -n1 basename \
-            | sed 's/\.json$//' | jq -R . | jq -s . >gh-pages/data/index.json
+
+          images="$(jq -r '.[].image' <<<"${MERGE_MATRIX}" | tr '\n' ' ')"
+
+          # Also pick up any image whose current version is absent from the
+          # dataset, so a failed merge leg or a skipped run does not leave it
+          # missing from the site until its next change.
+          for dir in images/*/; do
+            image="$(basename "${dir}")"
+            version="$(yq '.version' "${dir}/metadata.yaml")"
+            file="gh-pages/data/${image}.json"
+            if [[ ! -f "${file}" ]] ||
+              ! jq -e --arg v "${version}" 'any(.history[]; .version == $v)' "${file}" >/dev/null; then
+              images+=" ${image}"
+            fi
+          done
+
+          failed=""
+          for image in $(tr ' ' '\n' <<<"${images}" | sort -u); do
+            version="$(yq '.version' "images/${image}/metadata.yaml")"
+            if ! ./scripts/collect-sizes.sh "${image}" "${version}" gh-pages/data; then
+              echo "::warning::size collection failed for ${image}:${version}"
+              failed+=" ${image}:${version}"
+            fi
+          done
+          echo "failed=${failed# }" >>"${GITHUB_OUTPUT}"
+
+          find gh-pages/data -maxdepth 1 -name '*.json' ! -name index.json \
+            -exec basename {} .json \; | sort | jq -R . | jq -s . >gh-pages/data/index.json
 
       - name: Publish site
         run: |
@@ -298,3 +320,9 @@ jobs:
             git commit -m "chore: update size data for ${GITHUB_SHA}"
             git push origin gh-pages
           fi
+
+      - name: Report collection failures
+        if: ${{ steps.collect.outputs.failed != '' }}
+        run: |
+          echo "size collection failed for: ${{ steps.collect.outputs.failed }}" >&2
+          exit 1
