@@ -6,7 +6,7 @@ description: Argo CD MCP server (applications, sync, and resources over MCP)
 # on ARGOCD_MCP_VERSION in the Dockerfile — deliberately not annotated here,
 # since a -N suffix is a semver pre-release and would be "upgraded" straight
 # back to the bare release.
-version: 0.9.0-1
+version: 0.9.0-2
 platforms:
   - linux/amd64
   - linux/arm64
@@ -28,4 +28,7 @@ test: >-
   grep -q "(stateless mode) listening on 0.0.0.0:8000" /tmp/env.log &&
   wget -qO- --header="Content-Type: application/json" --header="Accept: application/json, text/event-stream"
   --post-data='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}'
-  http://127.0.0.1:8000/mcp | grep -q '"serverInfo"'
+  http://127.0.0.1:8000/mcp | grep -q '"serverInfo"' &&
+  ! SECRET_ENV_ARN=arn:aws:secretsmanager:eu-central-1:000000000000:secret:missing SECRET_ENV_KEY=argocd
+  AWS_ACCESS_KEY_ID=placeholder AWS_SECRET_ACCESS_KEY=placeholder
+  AWS_ENDPOINT_URL_SECRETS_MANAGER=http://127.0.0.1:9 /usr/local/bin/entrypoint.sh true

@@ -6,14 +6,19 @@ ARG ARGOCD_MCP_VERSION=0.9.0
 # known CVEs; upgrading npm itself is the only way to move them.
 # renovate: datasource=npm depName=npm
 ARG NPM_VERSION=12.0.2
+# renovate: datasource=npm depName=@aws-sdk/client-secrets-manager
+ARG AWS_SDK_CLIENT_VERSION=3.1138.0
 
 # The published bundle is architecture-independent JavaScript, so no TARGETARCH
 # mapping is needed — the only per-arch content comes from the base image.
 RUN npm install -g "npm@${NPM_VERSION}" \
     && npm install -g "argocd-mcp@${ARGOCD_MCP_VERSION}" \
-    && npm cache clean --force \
-    && test "$(argocd-mcp --version)" = "${ARGOCD_MCP_VERSION}"
+    && test "$(argocd-mcp --version)" = "${ARGOCD_MCP_VERSION}" \
+    && npm install --prefix /opt/secret-env --omit=dev \
+        "@aws-sdk/client-secrets-manager@${AWS_SDK_CLIENT_VERSION}" \
+    && npm cache clean --force
 
+COPY --chmod=644 secret-env.mjs /opt/secret-env/secret-env.mjs
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN addgroup -g 1001 argocd \
