@@ -4,6 +4,14 @@
 # on platforms that cannot override the container command.
 set -eu
 
+# On platforms whose environment variables are not secret (AgentCore Runtime),
+# credentials come from a Secrets Manager secret the execution role can read.
+if [ -n "${SECRET_ENV_ARN:-}" ]; then
+    exports=$(node /opt/secret-env/secret-env.mjs)
+    eval "$exports"
+    unset exports
+fi
+
 if [ "$#" -gt 0 ]; then
     exec "$@"
 fi

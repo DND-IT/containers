@@ -67,6 +67,13 @@ Upstream exposes the listener settings as flags only. This image's entrypoint al
 | `MCP_ALLOW_UNAUTHENTICATED` | `true` permits a non-loopback bind with no `MCP_AUTH_TOKEN`. Only safe when an external layer already authenticates callers |
 | `MCP_AUTH_TOKEN` | Bearer token required on inbound requests |
 
+Runtime environment variables are not always secret, so the entrypoint can also load credentials from AWS Secrets Manager before the server starts:
+
+| Variable | Effect |
+|---|---|
+| `SECRET_ENV_ARN` | ARN of a JSON secret whose top-level keys each hold an object of string variables, e.g. `{"argocd": {"ARGOCD_API_TOKEN": "..."}}`. Read with the default AWS credential chain |
+| `SECRET_ENV_KEY` | Which top-level key to export into the environment. The container exits if the secret cannot be read, has no such key, or holds anything but strings |
+
 Amazon Bedrock AgentCore Runtime expects streamable HTTP on `0.0.0.0:8000/mcp` and authenticates every invocation with IAM before it reaches the container, so it needs `MCP_BIND_ADDRESS=0.0.0.0`, `MCP_PORT=8000`, `MCP_STATELESS=true` and `MCP_ALLOW_UNAUTHENTICATED=true`.
 
 Any command passed to the container runs verbatim instead, so the other transports and explicit flags still work:
