@@ -5,7 +5,7 @@ ARG ARGOCD_MCP_VERSION=0.9.0
 # The node base image ships an older bundled npm whose own vendored deps carry
 # known CVEs; upgrading npm itself is the only way to move them.
 # renovate: datasource=npm depName=npm
-ARG NPM_VERSION=12.0.2
+ARG NPM_VERSION=12.1.0
 # renovate: datasource=npm depName=@aws-sdk/client-secrets-manager
 ARG AWS_SDK_CLIENT_VERSION=3.1138.0
 
