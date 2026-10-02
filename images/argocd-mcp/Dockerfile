@@ -7,7 +7,7 @@ ARG ARGOCD_MCP_VERSION=0.9.0
 # renovate: datasource=npm depName=npm
 ARG NPM_VERSION=12.0.2
 # renovate: datasource=npm depName=@aws-sdk/client-secrets-manager
-ARG AWS_SDK_CLIENT_VERSION=3.1138.0
+ARG AWS_SDK_CLIENT_VERSION=3.1143.0
 
 # The published bundle is architecture-independent JavaScript, so no TARGETARCH
 # mapping is needed — the only per-arch content comes from the base image.
