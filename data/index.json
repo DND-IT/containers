@@ -1,6 +1,7 @@
 [
   "agentcore-browser-mcp",
   "argocd-mcp",
+  "github-mcp",
   "go",
   "go-runtime",
   "node",
