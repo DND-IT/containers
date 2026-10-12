@@ -6,19 +6,15 @@ ARG ARGOCD_MCP_VERSION=0.9.0
 # known CVEs; upgrading npm itself is the only way to move them.
 # renovate: datasource=npm depName=npm
 ARG NPM_VERSION=12.0.2
-# renovate: datasource=npm depName=@aws-sdk/client-secrets-manager
-ARG AWS_SDK_CLIENT_VERSION=3.1138.0
 
 # The published bundle is architecture-independent JavaScript, so no TARGETARCH
 # mapping is needed — the only per-arch content comes from the base image.
 RUN npm install -g "npm@${NPM_VERSION}" \
     && npm install -g "argocd-mcp@${ARGOCD_MCP_VERSION}" \
     && test "$(argocd-mcp --version)" = "${ARGOCD_MCP_VERSION}" \
-    && npm install --prefix /opt/secret-env --omit=dev \
-        "@aws-sdk/client-secrets-manager@${AWS_SDK_CLIENT_VERSION}" \
     && npm cache clean --force
 
-COPY --chmod=644 secret-env.mjs /opt/secret-env/secret-env.mjs
+COPY --from=ghcr.io/dnd-it/secret-env:0.1.0@sha256:9310b8cf67731d95224f10e94818d186d2bf38a5f8afd931f34cfd213444151a /usr/local/bin/secret-env /usr/local/bin/secret-env
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN addgroup -g 1001 argocd \
@@ -34,4 +30,4 @@ LABEL org.opencontainers.image.description="Argo CD MCP server (applications, sy
 # GET /healthz probe, taking MCP_PORT, MCP_STATELESS and MCP_ALLOW_UNAUTHENTICATED
 # from the environment. Any command passed to the container is exec'd verbatim,
 # so `argocd-mcp stdio` and explicit flags keep working.
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/secret-env", "/usr/local/bin/entrypoint.sh"]
