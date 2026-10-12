@@ -1,0 +1,26 @@
+---
+name: github-mcp
+description: GitHub's MCP server, read-only over streamable HTTP, with installation tokens from an octo-sts token broker
+# <github-mcp-server version in go.mod>-<revision>. Renovate bumps go.mod; bump this with it.
+version: 2.0.2-1
+platforms:
+  - linux/amd64
+  - linux/arm64
+# Without a broker or a token it refuses to start; with a placeholder token it starts, answers
+# initialize through the proxy, and lists no write tools. No call reaches GitHub.
+test: |
+  test "$(id -u)" -ne 0 &&
+  ! timeout 10 github-mcp 2>/dev/null &&
+  { GITHUB_PERSONAL_ACCESS_TOKEN=ghs_000000000000000000000000000000000000 MCP_PORT=8000 github-mcp >/tmp/github-mcp.log 2>&1 & } &&
+  i=0 && until grep -q "github-mcp listening" /tmp/github-mcp.log; do i=$((i+1)); [ "$i" -lt 60 ] || { cat /tmp/github-mcp.log; exit 1; }; sleep 0.5; done &&
+  perl -MIO::Socket::INET -e '
+    sub post { my ($body) = @_;
+      my $s = IO::Socket::INET->new(PeerAddr => "127.0.0.1:8000") or die "connect: $!";
+      print $s "POST /mcp HTTP/1.1\r\nHost: runtime.example\r\nAuthorization: AWS4-HMAC-SHA256 x\r\nContent-Type: application/json\r\nAccept: application/json, text/event-stream\r\nConnection: close\r\nContent-Length: ".length($body)."\r\n\r\n$body";
+      local $/; my $r = <$s>; return $r; }
+    my $init = post(q({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}));
+    $init =~ m{^HTTP/1.1 200} && $init =~ /"serverInfo"/ or die "initialize: $init";
+    my $tools = post(q({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}));
+    $tools =~ /"get_file_contents"/ or die "tools/list: $tools";
+    $tools =~ /"(create|update|delete|merge|push)_/ and die "write tool listed: $1";
+  '
