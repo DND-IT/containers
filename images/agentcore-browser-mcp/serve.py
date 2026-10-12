@@ -5,6 +5,9 @@ the control-plane tools that create and delete runtimes, gateways and memories. 
 registered when the module is imported, so the allowlist has to be in the environment before
 the import. Stateful HTTP, because a Browser session lives in this process: the Runtime keeps
 a caller on one microVM for as long as its Mcp-Session-Id lasts.
+
+The session tools default their `region` argument to us-east-1 whatever AWS_REGION says, so a
+caller that leaves it out would start sessions there. Their default becomes AWS_REGION, when set.
 """
 
 import os
@@ -16,6 +19,10 @@ def main() -> None:
     import uvicorn
     from awslabs.amazon_bedrock_agentcore_mcp_server import server
 
+    region = os.environ.get("AWS_REGION")
+    if region:
+        default_region(server.mcp, region)
+
     server.cache.ensure_ready()
     app = server.mcp.streamable_http_app(host="0.0.0.0", stateless_http=False)
     uvicorn.run(
@@ -23,6 +30,15 @@ def main() -> None:
         host=os.environ.get("MCP_HOST", "0.0.0.0"),
         port=int(os.environ.get("MCP_PORT", "8000")),
     )
+
+
+def default_region(mcp, region: str) -> None:
+    for tool in mcp._tool_manager._tools.values():
+        arguments = tool.fn_metadata.arg_model
+        if "region" in arguments.model_fields:
+            arguments.model_fields["region"].default = region
+            arguments.model_rebuild(force=True)
+            tool.parameters["properties"]["region"]["default"] = region
 
 
 if __name__ == "__main__":
