@@ -1,0 +1,18 @@
+---
+name: secret-env
+description: Entrypoint shim that exports an AWS Secrets Manager secret's strings and execs the server
+version: 0.1.0
+platforms:
+  - linux/amd64
+  - linux/arm64
+# The binary is meant to be copied into other images:
+#   COPY --from=ghcr.io/dnd-it/secret-env:<version>@sha256:<digest> /usr/local/bin/secret-env /usr/local/bin/secret-env
+# This checks it execs the command untouched without SECRET_ENV_ID, and refuses to
+# start the command when the secret cannot be read.
+test: >-
+  test "$(id -u)" -ne 0 &&
+  test "$(secret-env sh -c 'echo ok')" = ok &&
+  ! SECRET_ENV_ID=arn:aws:secretsmanager:eu-central-1:000000000000:secret:missing
+  AWS_ACCESS_KEY_ID=placeholder AWS_SECRET_ACCESS_KEY=placeholder AWS_MAX_ATTEMPTS=1
+  AWS_ENDPOINT_URL_SECRETS_MANAGER=http://127.0.0.1:9 secret-env touch /tmp/started &&
+  test ! -e /tmp/started
