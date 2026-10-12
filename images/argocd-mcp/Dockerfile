@@ -14,7 +14,7 @@ RUN npm install -g "npm@${NPM_VERSION}" \
     && test "$(argocd-mcp --version)" = "${ARGOCD_MCP_VERSION}" \
     && npm cache clean --force
 
-COPY --from=ghcr.io/dnd-it/secret-env:0.1.0 /usr/local/bin/secret-env /usr/local/bin/secret-env
+COPY --from=ghcr.io/dnd-it/secret-env:0.1.0@sha256:9310b8cf67731d95224f10e94818d186d2bf38a5f8afd931f34cfd213444151a /usr/local/bin/secret-env /usr/local/bin/secret-env
 COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN addgroup -g 1001 argocd \
