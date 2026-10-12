@@ -1,0 +1,37 @@
+---
+name: agentcore-browser-mcp
+description: AgentCore MCP server with only its AgentCore Browser tools, over streamable HTTP
+# <upstream version>-<revision>, the same scheme as argocd-mcp.
+version: 0.2.1-1
+platforms:
+  - linux/amd64
+  - linux/arm64
+# Starts the server on :8000 without AWS credentials (no call is made until a tool
+# runs), then checks that the browser tools are listed and the control-plane tools
+# (runtimes, gateways, memories) are not.
+test: |
+  test "$(id -u)" -ne 0 &&
+  { python3 /opt/agentcore-browser-mcp/serve.py >/tmp/serve.log 2>&1 & } &&
+  python3 -c "
+  import json, time, urllib.request
+  headers = {'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream'}
+  def post(body, session=None):
+      h = dict(headers, **({'Mcp-Session-Id': session} if session else {}))
+      req = urllib.request.Request('http://127.0.0.1:8000/mcp', json.dumps(body).encode(), h)
+      return urllib.request.urlopen(req, timeout=10)
+  for _ in range(60):
+      try:
+          r = post({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'smoke', 'version': '0'}}})
+          break
+      except OSError:
+          time.sleep(1)
+  else:
+      raise SystemExit(open('/tmp/serve.log').read())
+  session = r.headers['Mcp-Session-Id']
+  post({'jsonrpc': '2.0', 'method': 'notifications/initialized'}, session)
+  body = post({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list'}, session).read().decode()
+  data = json.loads(next(l[5:] for l in body.splitlines() if l.startswith('data:')) if body.lstrip().startswith(('event', 'data')) else body)
+  names = {t['name'] for t in data['result']['tools']}
+  assert 'browser_navigate' in names and 'start_browser_session' in names, names
+  assert not any('runtime' in n or 'gateway' in n or 'memory' in n for n in names), names
+  "

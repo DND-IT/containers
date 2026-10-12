@@ -9,6 +9,8 @@ Container images for cloud work, built multi-arch and rootless with security-fir
 | Image | Description |
 |---|---|
 | `ghcr.io/dnd-it/argocd-mcp` | [Argo CD MCP server](https://github.com/argoproj-labs/mcp-for-argocd) (applications, sync, and resources over MCP) |
+| `ghcr.io/dnd-it/agentcore-browser-mcp` | [AgentCore MCP server](https://pypi.org/project/awslabs.amazon-bedrock-agentcore-mcp-server/) with only its AgentCore Browser tools, over streamable HTTP |
+| `ghcr.io/dnd-it/secret-env` | Entrypoint shim that exports an AWS Secrets Manager secret's strings and execs the server |
 | `ghcr.io/dnd-it/python` | Hardened Debian-slim Python base image for building and running Python services |
 | `ghcr.io/dnd-it/go` | Hardened Debian Go toolchain base image for building Go services |
 | `ghcr.io/dnd-it/go-runtime` | Minimal Debian-slim runtime base for statically-compiled Go binaries, no toolchain |
@@ -87,6 +89,34 @@ docker run --rm -p 3000:3000 ghcr.io/dnd-it/argocd-mcp:latest argocd-mcp http --
 ```
 
 A `sse` transport also exists upstream but the HTTP Stream transport supersedes it.
+
+### secret-env
+
+A static binary for other images to start their server through, so a server that takes its
+credentials from the environment can run on a platform whose environment variables are not
+secret, such as Amazon Bedrock AgentCore Runtime. Copy it in and put it in front of the command:
+
+```dockerfile
+COPY --from=ghcr.io/dnd-it/secret-env:0.1.0@sha256:<digest> /usr/local/bin/secret-env /usr/local/bin/secret-env
+ENTRYPOINT ["/usr/local/bin/secret-env"]
+CMD ["my-server"]
+```
+
+| Variable | Effect |
+|---|---|
+| `SECRET_ENV_ID` | Name or ARN of a Secrets Manager secret holding a JSON object of strings, e.g. `{"ARGOCD_API_TOKEN": "..."}`. Each one is exported before the command starts. Read with the default AWS credential chain; a name takes its region from `AWS_REGION` |
+
+Without `SECRET_ENV_ID` the command runs untouched. With it, the command does not start if the
+secret cannot be read, is not an object, or holds a value that is not a string.
+
+### agentcore-browser-mcp
+
+Packages awslabs' [AgentCore MCP server](https://pypi.org/project/awslabs.amazon-bedrock-agentcore-mcp-server/)
+with every service but AgentCore Browser switched off, so the control-plane tools that create
+and delete runtimes, gateways and memories never exist in the process. It serves stateful
+streamable HTTP on `0.0.0.0:8000/mcp` (`MCP_HOST`, `MCP_PORT`), because each Browser session
+lives in the process, and calls AgentCore with the default AWS credential chain; the role needs
+the `bedrock-agentcore` browser session actions.
 
 ### Verifying provenance
 
