@@ -11,6 +11,7 @@ Container images for cloud work, built multi-arch and rootless with security-fir
 | `ghcr.io/dnd-it/argocd-mcp` | [Argo CD MCP server](https://github.com/argoproj-labs/mcp-for-argocd) (applications, sync, and resources over MCP) |
 | `ghcr.io/dnd-it/agentcore-browser-mcp` | [AgentCore MCP server](https://pypi.org/project/awslabs.amazon-bedrock-agentcore-mcp-server/) with only its AgentCore Browser tools, over streamable HTTP |
 | `ghcr.io/dnd-it/secret-env` | Entrypoint shim that exports an AWS Secrets Manager secret's strings and execs the server |
+| `ghcr.io/dnd-it/github-mcp` | [GitHub's MCP server](https://github.com/github/github-mcp-server), read-only over streamable HTTP, with installation tokens from an octo-sts token broker |
 | `ghcr.io/dnd-it/python` | Hardened Debian-slim Python base image for building and running Python services |
 | `ghcr.io/dnd-it/go` | Hardened Debian Go toolchain base image for building Go services |
 | `ghcr.io/dnd-it/go-runtime` | Minimal Debian-slim runtime base for statically-compiled Go binaries, no toolchain |
@@ -88,6 +89,27 @@ docker run --rm -p 3000:3000 ghcr.io/dnd-it/argocd-mcp:latest argocd-mcp http --
 ```
 
 A `sse` transport also exists upstream but the HTTP Stream transport supersedes it.
+
+### github-mcp
+
+[GitHub's MCP server](https://github.com/github/github-mcp-server), built as a library into a
+small Go program that serves it read-only over streamable HTTP on `0.0.0.0:8000/mcp`
+(`MCP_HOST`, `MCP_PORT`). Upstream's HTTP mode takes the GitHub token from each request's
+`Authorization` header, which a platform such as Amazon Bedrock AgentCore Runtime uses for its
+own signature. So upstream listens on loopback, and the program in front of it sets a GitHub App
+installation token on every request it forwards:
+
+| Variable | Effect |
+|---|---|
+| `TOKEN_BROKER_DOMAIN` | The [octo-sts](https://github.com/octo-sts/app) broker's domain; also the audience of the STS web identity token the container's AWS role presents to it |
+| `TOKEN_BROKER_SCOPE` | What the token is for: an organization (policy in its `.github` repository) or `owner/repo` |
+| `TOKEN_BROKER_IDENTITY` | The trust policy's name, `.github/chainguard/<identity>.sts.yaml` |
+| `GITHUB_TOOLSETS` | Comma-separated toolsets to enable; upstream's default set when unset |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | For local runs: a fixed token instead of the broker |
+
+The role needs `sts:GetWebIdentityToken` for the broker's domain as audience, and the account's
+outbound web identity federation enabled. A token is bought at startup, which fails if the
+broker refuses, and renewed after 45 minutes; if renewal fails the current one is kept until 55.
 
 ### secret-env
 
