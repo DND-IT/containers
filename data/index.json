@@ -1,7 +1,9 @@
 [
+  "agentcore-browser-mcp",
   "argocd-mcp",
   "go",
   "go-runtime",
   "node",
-  "python"
+  "python",
+  "secret-env"
 ]
