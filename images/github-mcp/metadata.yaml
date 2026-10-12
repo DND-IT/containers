@@ -11,7 +11,7 @@ platforms:
 test: |
   test "$(id -u)" -ne 0 &&
   ! timeout 10 github-mcp 2>/dev/null &&
-  { GITHUB_PERSONAL_ACCESS_TOKEN=ghs_000000000000000000000000000000000000 MCP_PORT=8000 github-mcp >/tmp/github-mcp.log 2>&1 & } &&
+  { GITHUB_PERSONAL_ACCESS_TOKEN=$(printf %040d 0) MCP_PORT=8000 github-mcp >/tmp/github-mcp.log 2>&1 & } &&
   i=0 && until grep -q "github-mcp listening" /tmp/github-mcp.log; do i=$((i+1)); [ "$i" -lt 60 ] || { cat /tmp/github-mcp.log; exit 1; }; sleep 0.5; done &&
   perl -MIO::Socket::INET -e '
     sub post { my ($body) = @_;
