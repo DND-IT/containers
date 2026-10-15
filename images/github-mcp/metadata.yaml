@@ -2,7 +2,7 @@
 name: github-mcp
 description: GitHub's MCP server, read-only over streamable HTTP, with installation tokens from an octo-sts token broker
 # <github-mcp-server version in go.mod>-<revision>. Renovate bumps go.mod; bump this with it.
-version: 2.0.2-1
+version: 2.0.2-2
 platforms:
   - linux/amd64
   - linux/arm64

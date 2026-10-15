@@ -6,13 +6,20 @@
 // upstream server listens on loopback, and this process fronts it: it proves its AWS identity
 // to the broker with an STS web identity token, exchanges that for an installation token, and
 // sets it on every request it forwards, buying a new one before the hour is up.
+//
+// From MCP protocol 2026-07-28 the upstream server rejects a tools/call whose owner or repo
+// argument is not mirrored in an Mcp-Param-* header. Clients that do not send them, such as an
+// AgentCore Gateway, get them from this process, copied from the request body.
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -108,9 +115,56 @@ func proxyTo(upstream *url.URL, tokens *tokenSource) http.Handler {
 			} else {
 				slog.Error("no GitHub token for the request", "error", err)
 			}
+			setParamHeaders(r)
 		},
 		FlushInterval: -1,
 	}
+}
+
+var headerParams = []string{"owner", "repo"}
+
+func setParamHeaders(r *httputil.ProxyRequest) {
+	if r.In.Method != http.MethodPost || r.In.Body == nil {
+		return
+	}
+	body, err := io.ReadAll(r.In.Body)
+	r.Out.Body = io.NopCloser(bytes.NewReader(body))
+	if err != nil {
+		return
+	}
+	var call struct {
+		Method string `json:"method"`
+		Params struct {
+			Arguments map[string]json.RawMessage `json:"arguments"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(body, &call) != nil || call.Method != "tools/call" {
+		return
+	}
+	for _, name := range headerParams {
+		header := "Mcp-Param-" + name
+		raw, present := call.Params.Arguments[name]
+		var value string
+		if !present || string(raw) == "null" || len(r.Out.Header.Values(header)) > 0 || json.Unmarshal(raw, &value) != nil {
+			continue
+		}
+		r.Out.Header.Set(header, headerValue(value))
+	}
+}
+
+func headerValue(s string) string {
+	plain := !(strings.HasPrefix(s, "=?base64?") && strings.HasSuffix(s, "?=")) &&
+		!strings.HasPrefix(s, " ") && !strings.HasPrefix(s, "\t") &&
+		!strings.HasSuffix(s, " ") && !strings.HasSuffix(s, "\t")
+	for _, c := range s {
+		if c < 0x20 || c > 0x7e {
+			plain = false
+		}
+	}
+	if plain {
+		return s
+	}
+	return "=?base64?" + base64.StdEncoding.EncodeToString([]byte(s)) + "?="
 }
 
 func waitForUpstream(upstreamErr <-chan error) error {
