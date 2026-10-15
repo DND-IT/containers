@@ -59,6 +59,65 @@
           ]
         }
       }
+    },
+    {
+      "version": "2.0.2-2",
+      "digest": "sha256:cfb795c90115a3cf5b11b6da10a48adf85b483f5503cc5c83be046b4b5523ad0",
+      "collectedAt": "2026-10-15T10:56:52Z",
+      "platforms": {
+        "linux/amd64": {
+          "digest": "sha256:f9ef3e9e1e5082d9252233c813d5974ff414f914c529707d28338b6842489fd5",
+          "size": 38846636,
+          "layers": [
+            {
+              "digest": "sha256:a8ac7f6c67abc236e4c745052c404112b8fab6fe8ac3a329d1ef3b867ad67c71",
+              "size": 28232655,
+              "command": "# debian.sh --arch 'amd64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:6673dd23abc8e4c87eaf88c8b9c86b3c5b428c811c8414540e9604b69b8850fd",
+              "size": 3523442,
+              "command": "RUN /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends ca-certificates     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:191a84d297a1b549521dfc07f7232e60ecd073497ea9eefbcd5e13bc459c1988",
+              "size": 3311,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go # buildkit"
+            },
+            {
+              "digest": "sha256:d9130dd9a475dd6f06df17e1f141267d9ff69e4c2c23ec51a5308a353a3aa2f5",
+              "size": 7087228,
+              "command": "COPY /tmp/github-mcp /usr/local/bin/github-mcp # buildkit"
+            }
+          ]
+        },
+        "linux/arm64": {
+          "digest": "sha256:80495562453d9d8d11511805bd274aadb95a0674d59dd80021be79c6ee846838",
+          "size": 37864204,
+          "layers": [
+            {
+              "digest": "sha256:75782e20ea1f4a9d9259bc20a5ecbbea8d5943bf5370bf0f5727900728f1cc9a",
+              "size": 28117289,
+              "command": "# debian.sh --arch 'arm64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:0908c7cc458ad2c7be9d213d67a598b7ff4ae301219ca9e93c894112aea96178",
+              "size": 3353329,
+              "command": "RUN /bin/sh -c apt-get update     && apt-get install -y --no-install-recommends ca-certificates     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:cf02c3b29419790a042f2557e577f577aa9cead343212ecb2d173206fc554543",
+              "size": 3311,
+              "command": "RUN /bin/sh -c groupadd --gid 1001 go     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go # buildkit"
+            },
+            {
+              "digest": "sha256:d6c7c7f674c9ae53aff096d8e0725405d11dec5f06556112bb001210ab58fd23",
+              "size": 6390275,
+              "command": "COPY /tmp/github-mcp /usr/local/bin/github-mcp # buildkit"
+            }
+          ]
+        }
+      }
     }
   ],
   "description": "GitHub's MCP server, read-only over streamable HTTP, with installation tokens from an octo-sts token broker"
