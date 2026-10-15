@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -96,6 +97,37 @@ func TestProxySetsTokenAndLoopbackHost(t *testing.T) {
 	handler.ServeHTTP(httptest.NewRecorder(), req)
 	if seen == nil || seen.Header.Get("Authorization") != "Bearer ghs_x" || seen.Host != u.Host || seen.Header.Get("Origin") != "" || seen.URL.Path != "/mcp" {
 		t.Fatalf("upstream saw %+v", seen)
+	}
+}
+
+func TestProxyMirrorsOwnerAndRepoIntoParamHeaders(t *testing.T) {
+	var seen *http.Request
+	var seenBody []byte
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		seen = r
+		seenBody, _ = io.ReadAll(r.Body)
+	}))
+	defer upstream.Close()
+	u, _ := url.Parse(upstream.URL)
+	handler := proxyTo(u, &tokenSource{now: time.Now, mint: func(context.Context) (string, error) { return "ghs_x", nil }})
+
+	body := `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_file_contents","arguments":{"owner":"DND-IT","repo":"Grüezi","path":"README.md"}}}`
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "http://bedrock-agentcore.example/mcp", strings.NewReader(body)))
+	if seen.Header.Get("Mcp-Param-Owner") != "DND-IT" || seen.Header.Get("Mcp-Param-Repo") != "=?base64?R3LDvGV6aQ==?=" || string(seenBody) != body {
+		t.Fatalf("upstream saw %v %s", seen.Header, seenBody)
+	}
+
+	body = `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_repositories","arguments":{"query":"x","owner":null}}}`
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "http://bedrock-agentcore.example/mcp", strings.NewReader(body)))
+	if len(seen.Header.Values("Mcp-Param-Owner")) > 0 || len(seen.Header.Values("Mcp-Param-Repo")) > 0 {
+		t.Fatalf("headers for absent or null arguments: %v", seen.Header)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "http://bedrock-agentcore.example/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_issues","arguments":{"owner":"DND-IT","repo":"x"}}}`))
+	req.Header.Set("Mcp-Param-Owner", "DND-IT")
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+	if got := seen.Header.Values("Mcp-Param-Owner"); len(got) != 1 || got[0] != "DND-IT" || seen.Header.Get("Mcp-Param-Repo") != "x" {
+		t.Fatalf("client headers not kept: %v", seen.Header)
 	}
 }
 

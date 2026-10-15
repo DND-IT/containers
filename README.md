@@ -111,6 +111,11 @@ The role needs `sts:GetWebIdentityToken` for the broker's domain as audience, an
 outbound web identity federation enabled. A token is bought at startup, which fails if the
 broker refuses, and renewed after 45 minutes; if renewal fails the current one is kept until 55.
 
+From MCP protocol `2026-07-28` upstream answers `400` to a `tools/call` whose `owner` or `repo`
+argument has no matching `Mcp-Param-*` header. A client that does not send them, such as an
+AgentCore Gateway, gets them from the program in front, copied from the request body; headers the
+client sends are kept.
+
 ### secret-env
 
 A static binary for other images to start their server through, so a server that takes its
