@@ -12,6 +12,7 @@ Container images for cloud work, built multi-arch and rootless with security-fir
 | `ghcr.io/dnd-it/agentcore-browser-mcp` | [AgentCore MCP server](https://pypi.org/project/awslabs.amazon-bedrock-agentcore-mcp-server/) with only its AgentCore Browser tools, over streamable HTTP |
 | `ghcr.io/dnd-it/secret-env` | Entrypoint shim that exports an AWS Secrets Manager secret's strings and execs the server |
 | `ghcr.io/dnd-it/github-mcp` | [GitHub's MCP server](https://github.com/github/github-mcp-server), read-only over streamable HTTP, with installation tokens from an octo-sts token broker |
+| `ghcr.io/dnd-it/claude-code` | Headless [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code) (`claude -p`) with `git`, `gh`, `uv` and `rg`; the entrypoint can clone an agent profile into `CLAUDE_CONFIG_DIR` and a repository into `/workspace` first |
 | `ghcr.io/dnd-it/python` | Hardened Debian-slim Python base image for building and running Python services |
 | `ghcr.io/dnd-it/go` | Hardened Debian Go toolchain base image for building Go services |
 | `ghcr.io/dnd-it/go-runtime` | Minimal Debian-slim runtime base for statically-compiled Go binaries, no toolchain |
@@ -143,6 +144,29 @@ and delete runtimes, gateways and memories never exist in the process. It serves
 streamable HTTP on `0.0.0.0:8000/mcp` (`MCP_HOST`, `MCP_PORT`), because each Browser session
 lives in the process, and calls AgentCore with the default AWS credential chain; the role needs
 the `bedrock-agentcore` browser session actions.
+
+### claude-code
+
+Headless [Claude Code](https://www.npmjs.com/package/@anthropic-ai/claude-code): the default command is `claude -p`, which reads the prompt from stdin, does the work in `/workspace` and prints the result. Before it runs, the entrypoint can put an agent profile (`CLAUDE.md`, `agents/`, `skills/`, `settings.json`) into `CLAUDE_CONFIG_DIR` and clone a repository to work on:
+
+```shell
+docker run --rm \
+  -e CLAUDE_CODE_USE_BEDROCK=1 -e AWS_REGION=eu-central-1 \
+  -e AGENT_PROFILE_REPO=https://github.com/DND-IT/<profiles> -e AGENT_PROFILE=reviewer \
+  -e AGENT_REPO=https://github.com/DND-IT/<repo> -e GITHUB_TOKEN=<token> \
+  -e AGENT_PROMPT="Review the last commit" \
+  ghcr.io/dnd-it/claude-code:latest
+```
+
+| Variable | Effect |
+|---|---|
+| `AGENT_PROFILE_REPO` | Git URL whose contents (or `AGENT_PROFILE` within it) are copied into `CLAUDE_CONFIG_DIR`; `AGENT_PROFILE_REF` picks a branch or tag |
+| `AGENT_REPO` | Git URL cloned into `/workspace` unless it already holds a checkout; `AGENT_REPO_REF` picks a branch |
+| `AGENT_PROMPT` | Sent to the command on stdin, so `claude -p` runs it without a pipe |
+| `GITHUB_TOKEN` | Used for `https://github.com` through a git credential helper, so it is never written to `~/.gitconfig` or a remote URL |
+| `CLAUDE_CONFIG_DIR` | Where Claude Code reads its settings, agents and skills; `/home/node/.claude` |
+
+Authentication is Claude Code's own: `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_USE_BEDROCK=1` with AWS credentials. Any other command runs after the same bootstrap, e.g. `... ghcr.io/dnd-it/claude-code:latest bash`.
 
 ### Verifying provenance
 
