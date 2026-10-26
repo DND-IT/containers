@@ -1,0 +1,145 @@
+{
+  "name": "claude-code",
+  "history": [
+    {
+      "version": "2.1.310",
+      "digest": "sha256:f5fe7aee04069695b1e131d56fd3c59553a7128b27cb81690373850d58c40f45",
+      "collectedAt": "2026-10-26T14:21:57Z",
+      "platforms": {
+        "linux/amd64": {
+          "digest": "sha256:e401f54dedc1d0fb695ce08b5f6d52383d87b307bfe33b9ec7a25a72d92de4b9",
+          "size": 303107733,
+          "layers": [
+            {
+              "digest": "sha256:a8ac7f6c67abc236e4c745052c404112b8fab6fe8ac3a329d1ef3b867ad67c71",
+              "size": 28232655,
+              "command": "# debian.sh --arch 'amd64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:990581063f5c8a03a57db7a0d116679ea6e6e335d4ac48ef457f26f82d917eba",
+              "size": 3323,
+              "command": "RUN /bin/sh -c groupadd --gid 1000 node   && useradd --uid 1000 --gid node --shell /bin/bash --create-home node # buildkit"
+            },
+            {
+              "digest": "sha256:4996e33358abd29e5daf56cdda6681efb4db3bd55b5ab63a7d3d44f8400195a4",
+              "size": 50502756,
+              "command": "RUN /bin/sh -c ARCH= OPENSSL_ARCH= && dpkgArch=\"$(dpkg --print-architecture)\"     && case \"${dpkgArch##*-}\" in       amd64) ARCH='x64' OPENSSL_ARCH='linux-x86_64';;       ppc64el) ARCH='ppc64le' OPENSSL_ARCH='linux-ppc64le';;       arm64) ARCH='arm64' OPENSSL_ARCH='linux-aarch64';;       *) echo \"unsupported architecture\"; exit 1 ;;     esac     && set -ex     && apt-get update && apt-get install -y ca-certificates curl wget gnupg dirmngr xz-utils libatomic1 --no-install-recommends     && rm -rf /var/lib/apt/lists/*     && export GNUPGHOME=\"$(mktemp -d)\"     && for key in       5BE8A3F6C8A5C01D106C0AD820B1A390B168D356       DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7       CC68F5A3106FF448322E48ED27F5E38D5B0A215F       8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600       890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4       C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C       108F52B48DB57BB0CC439B2997B01419BD92F80A       A363A499291CBBC940DD62E41F10027AF002F8B0       655F3B5C1FB3FA8D1A0CA6BDE4A7D232B936D2FD     ; do       { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||       { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;     done     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-$ARCH.tar.xz\"     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc\"     && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc     && gpgconf --kill all     && rm -rf \"$GNUPGHOME\"     && grep \" node-v$NODE_VERSION-linux-$ARCH.tar.xz\\$\" SHASUMS256.txt | sha256sum -c -     && tar -xJf \"node-v$NODE_VERSION-linux-$ARCH.tar.xz\" -C /usr/local --strip-components=1 --no-same-owner     && rm \"node-v$NODE_VERSION-linux-$ARCH.tar.xz\" SHASUMS256.txt.asc SHASUMS256.txt     && find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name \"$OPENSSL_ARCH\" -exec rm -rf {} \\;     && apt-mark auto '.*' > /dev/null     && find /usr/local -type f -executable -exec ldd '{}' ';'       | awk '/=>/ { so = $(NF-1); if (index(so, \"/usr/local/\") == 1) { next }; gsub(\"^/(usr/)?\", \"\", so); print so }'       | sort -u       | xargs -r dpkg-query --search       | cut -d: -f1       | sort -u       | xargs -r apt-mark manual     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false     && ln -s /usr/local/bin/node /usr/local/bin/nodejs     && node --version     && npm --version     && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:f95897c2a1fb7bce26b018dd74b2845f816f7b86d5adff2939c6482b1d5b474c",
+              "size": 1712981,
+              "command": "RUN /bin/sh -c set -ex   && savedAptMark=\"$(apt-mark showmanual)\"   && apt-get update && apt-get install -y ca-certificates curl wget gnupg dirmngr --no-install-recommends   && rm -rf /var/lib/apt/lists/*   && export GNUPGHOME=\"$(mktemp -d)\"   && for key in     6A010C5166006599AA17F08146C2130DFD2497F5   ; do     { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||     { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;   done   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz\"   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc\"   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && gpgconf --kill all   && rm -rf \"$GNUPGHOME\"   && mkdir -p /opt   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && apt-mark auto '.*' > /dev/null   && { [ -z \"$savedAptMark\" ] || apt-mark manual $savedAptMark > /dev/null; }   && find /usr/local -type f -executable -exec ldd '{}' ';'     | awk '/=>/ { so = $(NF-1); if (index(so, \"/usr/local/\") == 1) { next }; gsub(\"^/(usr/)?\", \"\", so); print so }'     | sort -u     | xargs -r dpkg-query --search     | cut -d: -f1     | sort -u     | xargs -r apt-mark manual   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false   && yarn --version   && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:c35748eaa5ecc949b0f7cc349a9f7c4a5417dc008e2d9bebd53678d87238fcbf",
+              "size": 450,
+              "command": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit"
+            },
+            {
+              "digest": "sha256:be277171c67ba0f4ce1b6dceb5fad6b2a3a7d4b5194dc701d43509a2208cc514",
+              "size": 3310,
+              "command": "RUN /bin/sh -c userdel --remove node     && groupadd --gid 1001 node     && useradd --uid 1001 --gid node --create-home --shell /usr/sbin/nologin node # buildkit"
+            },
+            {
+              "digest": "sha256:6a14f36f0d24a766bfb915ac66294155defb8d2491dc9bab2b0df255b1f615cf",
+              "size": 53858359,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=amd64 /bin/bash -o pipefail -c apt-get update     && apt-get install -y --no-install-recommends         ca-certificates         curl         git         jq         less         openssh-client         python3         ripgrep         tmux         unzip     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:311c79808826f80609163e76fb474b4234d142e0a0387610e41ceeae1917dd3f",
+              "size": 32165761,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=amd64 /bin/bash -o pipefail -c curl -fsSL \"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TARGETARCH}.tar.gz\"         | tar -xz -C /usr/local/bin --strip-components=2 --no-same-owner \"gh_${GH_VERSION}_linux_${TARGETARCH}/bin/gh\"     && UV_ARCH=\"$(case \"${TARGETARCH}\" in amd64) echo x86_64 ;; arm64) echo aarch64 ;; esac)\"     && curl -fsSL \"https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${UV_ARCH}-unknown-linux-gnu.tar.gz\"         | tar -xz -C /usr/local/bin --strip-components=1 --no-same-owner     && gh --version     && uv --version # buildkit"
+            },
+            {
+              "digest": "sha256:221d38a9fab29acca92dc99334dc5a1577164c113f861db60446c756a05485df",
+              "size": 136627206,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=amd64 /bin/bash -o pipefail -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}\"     && node \"$(npm root -g)/@anthropic-ai/claude-code/install.cjs\"     && npm cache clean --force     && test \"$(claude --version)\" = \"${CLAUDE_CODE_VERSION} (Claude Code)\" # buildkit"
+            },
+            {
+              "digest": "sha256:3b8cd98b5f132e708336c592dbdbd6da89a169726d2f59254abea04160e265c0",
+              "size": 798,
+              "command": "COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint # buildkit"
+            },
+            {
+              "digest": "sha256:7cca7fc5b5fbf5676e59bcce015b88cdb5405779d2d0eeeb310fcba433cc1644",
+              "size": 102,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=amd64 /bin/bash -o pipefail -c mkdir /workspace     && chown node:node /workspace # buildkit"
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "size": 32,
+              "command": "WORKDIR /workspace"
+            }
+          ]
+        },
+        "linux/arm64": {
+          "digest": "sha256:4dcde4240cda4df7c3aeb9dce5ed8236f53c239f43afac26baff8b79fd7719b6",
+          "size": 301723467,
+          "layers": [
+            {
+              "digest": "sha256:75782e20ea1f4a9d9259bc20a5ecbbea8d5943bf5370bf0f5727900728f1cc9a",
+              "size": 28117289,
+              "command": "# debian.sh --arch 'arm64' out/ 'bookworm' '@1787529600'"
+            },
+            {
+              "digest": "sha256:18a8d678ac2908ce11be82449cf079d3b45de8a0b6425f7534dddb98b521e89f",
+              "size": 3314,
+              "command": "RUN /bin/sh -c groupadd --gid 1000 node   && useradd --uid 1000 --gid node --shell /bin/bash --create-home node # buildkit"
+            },
+            {
+              "digest": "sha256:707d116f5feee6cfa5e25ac4182074f2f705d6b9f3993bc8de8f505197c32868",
+              "size": 50478679,
+              "command": "RUN /bin/sh -c ARCH= OPENSSL_ARCH= && dpkgArch=\"$(dpkg --print-architecture)\"     && case \"${dpkgArch##*-}\" in       amd64) ARCH='x64' OPENSSL_ARCH='linux-x86_64';;       ppc64el) ARCH='ppc64le' OPENSSL_ARCH='linux-ppc64le';;       arm64) ARCH='arm64' OPENSSL_ARCH='linux-aarch64';;       *) echo \"unsupported architecture\"; exit 1 ;;     esac     && set -ex     && apt-get update && apt-get install -y ca-certificates curl wget gnupg dirmngr xz-utils libatomic1 --no-install-recommends     && rm -rf /var/lib/apt/lists/*     && export GNUPGHOME=\"$(mktemp -d)\"     && for key in       5BE8A3F6C8A5C01D106C0AD820B1A390B168D356       DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7       CC68F5A3106FF448322E48ED27F5E38D5B0A215F       8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600       890C08DB8579162FEE0DF9DB8BEAB4DFCF555EF4       C82FA3AE1CBEDC6BE46B9360C43CEC45C17AB93C       108F52B48DB57BB0CC439B2997B01419BD92F80A       A363A499291CBBC940DD62E41F10027AF002F8B0       655F3B5C1FB3FA8D1A0CA6BDE4A7D232B936D2FD     ; do       { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||       { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;     done     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-$ARCH.tar.xz\"     && curl -fsSLO --compressed \"https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc\"     && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc     && gpgconf --kill all     && rm -rf \"$GNUPGHOME\"     && grep \" node-v$NODE_VERSION-linux-$ARCH.tar.xz\\$\" SHASUMS256.txt | sha256sum -c -     && tar -xJf \"node-v$NODE_VERSION-linux-$ARCH.tar.xz\" -C /usr/local --strip-components=1 --no-same-owner     && rm \"node-v$NODE_VERSION-linux-$ARCH.tar.xz\" SHASUMS256.txt.asc SHASUMS256.txt     && find /usr/local/include/node/openssl/archs -mindepth 1 -maxdepth 1 ! -name \"$OPENSSL_ARCH\" -exec rm -rf {} \\;     && apt-mark auto '.*' > /dev/null     && find /usr/local -type f -executable -exec ldd '{}' ';'       | awk '/=>/ { so = $(NF-1); if (index(so, \"/usr/local/\") == 1) { next }; gsub(\"^/(usr/)?\", \"\", so); print so }'       | sort -u       | xargs -r dpkg-query --search       | cut -d: -f1       | sort -u       | xargs -r apt-mark manual     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false     && ln -s /usr/local/bin/node /usr/local/bin/nodejs     && node --version     && npm --version     && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:2c2703a803deed783a7ad4280ddfa7730b37f3366e943e31da0b9a69d47331e5",
+              "size": 1713015,
+              "command": "RUN /bin/sh -c set -ex   && savedAptMark=\"$(apt-mark showmanual)\"   && apt-get update && apt-get install -y ca-certificates curl wget gnupg dirmngr --no-install-recommends   && rm -rf /var/lib/apt/lists/*   && export GNUPGHOME=\"$(mktemp -d)\"   && for key in     6A010C5166006599AA17F08146C2130DFD2497F5   ; do     { gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ||     { gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \"$key\" && gpg --batch --fingerprint \"$key\"; } ;   done   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz\"   && curl -fsSLO --compressed \"https://yarnpkg.com/downloads/$YARN_VERSION/yarn-v$YARN_VERSION.tar.gz.asc\"   && gpg --batch --verify yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && gpgconf --kill all   && rm -rf \"$GNUPGHOME\"   && mkdir -p /opt   && tar -xzf yarn-v$YARN_VERSION.tar.gz -C /opt/   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarn /usr/local/bin/yarn   && ln -s /opt/yarn-v$YARN_VERSION/bin/yarnpkg /usr/local/bin/yarnpkg   && rm yarn-v$YARN_VERSION.tar.gz.asc yarn-v$YARN_VERSION.tar.gz   && apt-mark auto '.*' > /dev/null   && { [ -z \"$savedAptMark\" ] || apt-mark manual $savedAptMark > /dev/null; }   && find /usr/local -type f -executable -exec ldd '{}' ';'     | awk '/=>/ { so = $(NF-1); if (index(so, \"/usr/local/\") == 1) { next }; gsub(\"^/(usr/)?\", \"\", so); print so }'     | sort -u     | xargs -r dpkg-query --search     | cut -d: -f1     | sort -u     | xargs -r apt-mark manual   && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false   && yarn --version   && rm -rf /tmp/* # buildkit"
+            },
+            {
+              "digest": "sha256:ea1c5d4af1ed637f410554e0375978811f80e3f696d6a4f317ceafae0ef759e6",
+              "size": 448,
+              "command": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit"
+            },
+            {
+              "digest": "sha256:1a2a2840820b55874aeaa86f2500376c7e6c1a5479b1d13f2b1a74a595adfa3a",
+              "size": 3300,
+              "command": "RUN /bin/sh -c userdel --remove node     && groupadd --gid 1001 node     && useradd --uid 1001 --gid node --create-home --shell /usr/sbin/nologin node # buildkit"
+            },
+            {
+              "digest": "sha256:e6356daaf226c40d8df8f61dd002353a8647476bebf7396a03621dbed73f628b",
+              "size": 53641877,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=arm64 /bin/bash -o pipefail -c apt-get update     && apt-get install -y --no-install-recommends         ca-certificates         curl         git         jq         less         openssh-client         python3         ripgrep         tmux         unzip     && rm -rf /var/lib/apt/lists/* # buildkit"
+            },
+            {
+              "digest": "sha256:3b65d8d771598c4fd57f801388d9d00a8c5650d5fbb08dea9031996263f903ac",
+              "size": 30389293,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=arm64 /bin/bash -o pipefail -c curl -fsSL \"https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${TARGETARCH}.tar.gz\"         | tar -xz -C /usr/local/bin --strip-components=2 --no-same-owner \"gh_${GH_VERSION}_linux_${TARGETARCH}/bin/gh\"     && UV_ARCH=\"$(case \"${TARGETARCH}\" in amd64) echo x86_64 ;; arm64) echo aarch64 ;; esac)\"     && curl -fsSL \"https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${UV_ARCH}-unknown-linux-gnu.tar.gz\"         | tar -xz -C /usr/local/bin --strip-components=1 --no-same-owner     && gh --version     && uv --version # buildkit"
+            },
+            {
+              "digest": "sha256:918404a25bb68db8e57f779438f752fbc151f19a3f30066ad93d4799e80e5297",
+              "size": 137375321,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=arm64 /bin/bash -o pipefail -c npm install -g \"npm@${NPM_VERSION}\"     && npm install -g \"@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}\"     && node \"$(npm root -g)/@anthropic-ai/claude-code/install.cjs\"     && npm cache clean --force     && test \"$(claude --version)\" = \"${CLAUDE_CODE_VERSION} (Claude Code)\" # buildkit"
+            },
+            {
+              "digest": "sha256:b03760b77274ebb356f007911ae9e0aefca2df2dd7e140a3225195ef6d65372f",
+              "size": 797,
+              "command": "COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint # buildkit"
+            },
+            {
+              "digest": "sha256:4d56d238d98b371b7a84438160d0a20e45195a6a97cb5574531442ce56075131",
+              "size": 102,
+              "command": "RUN |5 CLAUDE_CODE_VERSION=2.1.310 NPM_VERSION=12.2.1 GH_VERSION=2.103.2 UV_VERSION=0.13.5 TARGETARCH=arm64 /bin/bash -o pipefail -c mkdir /workspace     && chown node:node /workspace # buildkit"
+            },
+            {
+              "digest": "sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1",
+              "size": 32,
+              "command": "WORKDIR /workspace"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "description": "Headless Claude Code agent with git-repo and agent-profile bootstrap"
+}

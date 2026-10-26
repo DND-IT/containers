@@ -1,6 +1,7 @@
 [
   "agentcore-browser-mcp",
   "argocd-mcp",
+  "claude-code",
   "github-mcp",
   "go",
   "go-runtime",
