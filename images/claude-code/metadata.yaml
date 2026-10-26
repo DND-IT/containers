@@ -1,0 +1,19 @@
+---
+name: claude-code
+description: Headless Claude Code agent with git-repo and agent-profile bootstrap
+# renovate: datasource=npm depName=@anthropic-ai/claude-code
+version: 2.1.310
+platforms:
+  - linux/amd64
+  - linux/arm64
+# Checks the tools run, the image is rootless, and the entrypoint bootstraps a
+# profile from a local repository into CLAUDE_CONFIG_DIR before exec'ing.
+test: >-
+  claude --version && node --version && git --version && gh --version && uv --version &&
+  rg --version && tmux -V && test "$(id -u)" = 1001 && test "$(pwd)" = /workspace &&
+  repo="$(mktemp -d)" && mkdir -p "$repo/agents/reviewer" &&
+  echo "You review pull requests." > "$repo/agents/reviewer/CLAUDE.md" &&
+  git -C "$repo" init --quiet && git -C "$repo" -c user.name=t -c user.email=t@t add . &&
+  git -C "$repo" -c user.name=t -c user.email=t@t commit --quiet -m profile &&
+  AGENT_PROFILE_REPO="file://$repo" AGENT_PROFILE=agents/reviewer CLAUDE_CONFIG_DIR="$(mktemp -d)/claude"
+  /usr/local/bin/entrypoint sh -c 'grep -q "review pull requests" "$CLAUDE_CONFIG_DIR/CLAUDE.md"'
