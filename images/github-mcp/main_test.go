@@ -137,23 +137,10 @@ func TestSplitList(t *testing.T) {
 	}
 }
 
-func TestOtherWriteToolsLeavesOnlyTheAllowedWrite(t *testing.T) {
-	excluded := map[string]bool{}
-	for _, name := range otherWriteTools([]string{"issue_write"}) {
-		excluded[name] = true
-	}
-	if excluded["issue_write"] {
-		t.Error("issue_write is excluded")
-	}
-	for _, name := range []string{"create_pull_request", "merge_pull_request", "push_files", "add_issue_comment"} {
-		if !excluded[name] {
-			t.Errorf("%s is not excluded", name)
+func TestReadOnlyUnlessTurnedOff(t *testing.T) {
+	for value, want := range map[string]bool{"": true, "true": true, "0": true, "false": false, " false ": false} {
+		if got := readOnly(value); got != want {
+			t.Errorf("readOnly(%q) = %v, want %v", value, got, want)
 		}
-	}
-	if excluded["issue_read"] || excluded["get_file_contents"] {
-		t.Error("a read-only tool is excluded")
-	}
-	if otherWriteTools(nil) != nil {
-		t.Error("without allowed writes nothing is excluded")
 	}
 }
