@@ -1,6 +1,9 @@
 // Command github-mcp serves GitHub's MCP server read-only over streamable HTTP, authenticated
 // with a GitHub App installation token from an octo-sts token broker.
 //
+// GITHUB_WRITE_TOOLS names the write tools a deployment serves besides the read-only ones, for
+// a token that may make those writes; every other write tool stays off.
+//
 // The upstream HTTP server takes its GitHub token from each request's Authorization header,
 // which a platform such as Amazon Bedrock AgentCore Runtime uses for its own signature. So the
 // upstream server listens on loopback, and this process fronts it: it proves its AWS identity
@@ -34,7 +37,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/github/github-mcp-server/v2/pkg/github"
 	ghhttp "github.com/github/github-mcp-server/v2/pkg/http"
+	"github.com/github/github-mcp-server/v2/pkg/translations"
 )
 
 const (
@@ -60,6 +65,7 @@ func run() error {
 		return fmt.Errorf("first token: %w", err)
 	}
 
+	writes := splitList(os.Getenv("GITHUB_WRITE_TOOLS"))
 	upstreamErr := make(chan error, 1)
 	go func() {
 		upstreamErr <- ghhttp.RunHTTPServer(ghhttp.ServerConfig{
@@ -67,8 +73,10 @@ func run() error {
 			Port:              upstreamPort,
 			ListenHost:        "127.0.0.1",
 			ContentWindowSize: 5000,
-			ReadOnly:          true,
+			ReadOnly:          len(writes) == 0,
 			EnabledToolsets:   splitList(os.Getenv("GITHUB_TOOLSETS")),
+			EnabledTools:      writes,
+			ExcludeTools:      otherWriteTools(writes),
 		})
 	}()
 	if err := waitForUpstream(upstreamErr); err != nil {
@@ -267,6 +275,23 @@ func (b *broker) mint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("token broker answered without a token: %v", err)
 	}
 	return body.Token, nil
+}
+
+func otherWriteTools(allowed []string) []string {
+	if len(allowed) == 0 {
+		return nil
+	}
+	allow := make(map[string]bool, len(allowed))
+	for _, name := range allowed {
+		allow[name] = true
+	}
+	var excluded []string
+	for _, tool := range github.AllTools(translations.NullTranslationHelper) {
+		if !tool.IsReadOnly() && !allow[tool.Tool.Name] {
+			excluded = append(excluded, tool.Tool.Name)
+		}
+	}
+	return excluded
 }
 
 func splitList(value string) []string {
