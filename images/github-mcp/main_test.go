@@ -136,3 +136,11 @@ func TestSplitList(t *testing.T) {
 		t.Fatalf("got %v", got)
 	}
 }
+
+func TestReadOnlyUnlessTurnedOff(t *testing.T) {
+	for value, want := range map[string]bool{"": true, "true": true, "0": true, "false": false, " false ": false} {
+		if got := readOnly(value); got != want {
+			t.Errorf("readOnly(%q) = %v, want %v", value, got, want)
+		}
+	}
+}

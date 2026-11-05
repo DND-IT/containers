@@ -1,6 +1,9 @@
 // Command github-mcp serves GitHub's MCP server read-only over streamable HTTP, authenticated
 // with a GitHub App installation token from an octo-sts token broker.
 //
+// GITHUB_READ_ONLY=false serves the write tools too, for a deployment where something in front
+// of the server, such as a gateway's authorization policy, decides who may call them.
+//
 // The upstream HTTP server takes its GitHub token from each request's Authorization header,
 // which a platform such as Amazon Bedrock AgentCore Runtime uses for its own signature. So the
 // upstream server listens on loopback, and this process fronts it: it proves its AWS identity
@@ -67,7 +70,7 @@ func run() error {
 			Port:              upstreamPort,
 			ListenHost:        "127.0.0.1",
 			ContentWindowSize: 5000,
-			ReadOnly:          true,
+			ReadOnly:          readOnly(os.Getenv("GITHUB_READ_ONLY")),
 			EnabledToolsets:   splitList(os.Getenv("GITHUB_TOOLSETS")),
 		})
 	}()
@@ -267,6 +270,10 @@ func (b *broker) mint(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("token broker answered without a token: %v", err)
 	}
 	return body.Token, nil
+}
+
+func readOnly(value string) bool {
+	return strings.TrimSpace(value) != "false"
 }
 
 func splitList(value string) []string {
