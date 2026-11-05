@@ -1,4 +1,4 @@
-FROM golang:1.27.0-bookworm@sha256:ded31c68586d2e49e760acc2e65a884b23d032e9bbbed0ae0c55abd3fcaf4452
+FROM golang:1.27.3-bookworm@sha256:b08bc99468058b6d8a0ada17fa54996b910d5e82a7e95bee0372e3bd98415258
 
 RUN groupadd --gid 1001 go \
     && useradd --uid 1001 --gid go --create-home --shell /usr/sbin/nologin go \
