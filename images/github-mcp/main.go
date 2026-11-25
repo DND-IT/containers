@@ -13,6 +13,10 @@
 // From MCP protocol 2026-07-28 the upstream server rejects a tools/call whose owner or repo
 // argument is not mirrored in an Mcp-Param-* header. Clients that do not send them, such as an
 // AgentCore Gateway, get them from this process, copied from the request body.
+//
+// AgentCore Runtime checks a server's health at GET /ping, which this process answers itself
+// without logging. A server without /ping gets an MCP ping on /mcp instead, every few seconds,
+// and the upstream server logs a session opening and closing for each one.
 package main
 
 import (
@@ -84,7 +88,7 @@ func run() error {
 	}
 	server := &http.Server{
 		Addr:              net.JoinHostPort(os.Getenv("MCP_HOST"), port),
-		Handler:           proxy(tokens),
+		Handler:           withPing(proxy(tokens)),
 		ReadHeaderTimeout: 60 * time.Second,
 	}
 	serverErr := make(chan error, 1)
@@ -100,6 +104,17 @@ func run() error {
 	case err := <-serverErr:
 		return err
 	}
+}
+
+func withPing(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/ping" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"status":"Healthy"}`)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func proxy(tokens *tokenSource) http.Handler {

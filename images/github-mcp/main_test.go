@@ -144,3 +144,23 @@ func TestReadOnlyUnlessTurnedOff(t *testing.T) {
 		}
 	}
 }
+
+func TestPingIsAnsweredWithoutTheUpstreamServer(t *testing.T) {
+	proxied := 0
+	handler := withPing(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		proxied++
+		w.WriteHeader(http.StatusAccepted)
+	}))
+
+	ping := httptest.NewRecorder()
+	handler.ServeHTTP(ping, httptest.NewRequest(http.MethodGet, "/ping", nil))
+	mcp := httptest.NewRecorder()
+	handler.ServeHTTP(mcp, httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader("{}")))
+
+	if ping.Code != http.StatusOK || ping.Body.String() != `{"status":"Healthy"}` || ping.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("ping: %d %q %q", ping.Code, ping.Body.String(), ping.Header().Get("Content-Type"))
+	}
+	if mcp.Code != http.StatusAccepted || proxied != 1 {
+		t.Fatalf("/mcp was not proxied: %d, %d calls", mcp.Code, proxied)
+	}
+}
