@@ -2,7 +2,7 @@
 name: github-mcp
 description: GitHub's MCP server, read-only unless GITHUB_READ_ONLY=false, over streamable HTTP, with installation tokens from an octo-sts token broker
 # <github-mcp-server version in go.mod>-<revision>. Renovate bumps go.mod; bump this with it.
-version: 2.0.2-3
+version: 2.0.2-4
 platforms:
   - linux/amd64
   - linux/arm64
@@ -18,6 +18,9 @@ test: |
       my $s = IO::Socket::INET->new(PeerAddr => "127.0.0.1:8000") or die "connect: $!";
       print $s "POST /mcp HTTP/1.1\r\nHost: runtime.example\r\nAuthorization: AWS4-HMAC-SHA256 x\r\nContent-Type: application/json\r\nAccept: application/json, text/event-stream\r\nConnection: close\r\nContent-Length: ".length($body)."\r\n\r\n$body";
       local $/; my $r = <$s>; return $r; }
+    my $s = IO::Socket::INET->new(PeerAddr => "127.0.0.1:8000") or die "connect: $!";
+    print $s "GET /ping HTTP/1.1\r\nHost: runtime.example\r\nConnection: close\r\n\r\n";
+    { local $/; my $ping = <$s>; $ping =~ m{^HTTP/1.1 200} && $ping =~ /\{"status":"Healthy"\}/ or die "ping: $ping"; }
     my $init = post(q({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}));
     $init =~ m{^HTTP/1.1 200} && $init =~ /"serverInfo"/ or die "initialize: $init";
     my $tools = post(q({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}));
